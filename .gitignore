@@ -1,0 +1,24 @@
+# IDE
+.idea/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# YOLO
+*.pt
+*.onnx
+*.cache
+
+runs/
+
+# Rust
+target/
+
+# Dataset
+dataset/
+tmp/
+
+# OS
+.DS_Store
