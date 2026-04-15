@@ -26,7 +26,6 @@ import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -37,16 +36,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import com.skyo.ripguard.EducationViewModelSingleton
 import com.skyo.ripguard.R
 import com.skyo.ripguard.controller.ChromeController
 import com.skyo.ripguard.controller.UseChrome
+import com.skyo.ripguard.ui.beranda.BerandaScreen
+import com.skyo.ripguard.ui.edukasi.EduScreen
+import com.skyo.ripguard.ui.edukasi.EducationFAB
+import com.skyo.ripguard.ui.edukasi.EdukasiScreen
 import com.skyo.ripguard.viewmodel.NavbarViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -65,7 +70,8 @@ fun DummyScreen(chrome: ChromeController, text: String, topBar: @Composable () -
 fun DefaultTopBar(
     navController: NavController,
     drawerState: DrawerState,
-    scope: CoroutineScope
+    scope: CoroutineScope,
+    text: String = "Skyo"
 ) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -73,7 +79,7 @@ fun DefaultTopBar(
 
     CenterAlignedTopAppBar(
         title = {
-            Text(currentDestination?.label ?: "Skyo")
+            Text(currentDestination?.label ?: text)
         },
         navigationIcon = {
             IconButton(onClick = {
@@ -127,6 +133,8 @@ fun NavDrawer(
     val scope = rememberCoroutineScope()
 
     val context = LocalContext.current.applicationContext as Application
+
+    val educationViewModel = remember { EducationViewModelSingleton.get() }
 
     val selectedDestination = navViewModel.selectedDestination
 
@@ -195,12 +203,18 @@ fun NavDrawer(
                 modifier = Modifier.padding(innerPadding)
             ) {
                 composable("beranda") {
-                    DummyScreen(chrome, "Beranda", @Composable {
+                    BerandaScreen(chrome, @Composable {
                         DefaultTopBar(
                             navController,
                             drawerState,
                             scope
                         )
+                    }, {
+                        navController.navigate(it.route) {
+                            popUpTo(0) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                        navViewModel.setSelectedDestination(it)
                     })
                 }
                 composable("lokasi") {
@@ -222,13 +236,38 @@ fun NavDrawer(
                     })
                 }
                 composable("edukasi") {
-                    DummyScreen(chrome, "Zona Edukasi", @Composable {
+                    EdukasiScreen(chrome, navController, @Composable {
                         DefaultTopBar(
                             navController,
                             drawerState,
                             scope
                         )
                     })
+                }
+
+                composable(
+                    route = "edukasi_id/{id}",
+                    arguments = listOf(navArgument("id") { type = NavType.IntType })
+                ) {
+                    val id = it.arguments?.getInt("id")
+
+                    val edu = educationViewModel.getEducationById(id!!)
+                    val nextText = educationViewModel.getNextEducationTitle(id)
+                    val prevText = educationViewModel.getPrevEducationTitle(id)
+
+                    EduScreen(
+                        chrome, edu,
+                        @Composable {
+                            DefaultTopBar(
+                                navController,
+                                drawerState,
+                                scope,
+                                edu!!.title
+                            )
+                        },
+                        @Composable {
+                            EducationFAB(navController, id, prevText, nextText)
+                        })
                 }
             }
         }
