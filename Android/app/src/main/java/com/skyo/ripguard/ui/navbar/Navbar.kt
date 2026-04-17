@@ -49,9 +49,11 @@ import com.skyo.ripguard.R
 import com.skyo.ripguard.controller.ChromeController
 import com.skyo.ripguard.controller.UseChrome
 import com.skyo.ripguard.ui.beranda.BerandaScreen
+import com.skyo.ripguard.ui.deteksi.DeteksiScreen
 import com.skyo.ripguard.ui.edukasi.EduScreen
 import com.skyo.ripguard.ui.edukasi.EducationFAB
 import com.skyo.ripguard.ui.edukasi.EdukasiScreen
+import com.skyo.ripguard.ui.lokasi.LokasiScreen
 import com.skyo.ripguard.viewmodel.NavbarViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -218,7 +220,7 @@ fun NavDrawer(
                     })
                 }
                 composable("lokasi") {
-                    DummyScreen(chrome, "Lokasi", @Composable {
+                    LokasiScreen(chrome, @Composable {
                         DefaultTopBar(
                             navController,
                             drawerState,
@@ -227,7 +229,7 @@ fun NavDrawer(
                     })
                 }
                 composable("deteksi") {
-                    DummyScreen(chrome, "Deteksi", @Composable {
+                    DeteksiScreen(chrome, @Composable {
                         DefaultTopBar(
                             navController,
                             drawerState,
