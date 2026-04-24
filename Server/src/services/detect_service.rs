@@ -3,6 +3,7 @@ use axum::Json;
 use image::{ImageReader, Rgb};
 use imageproc::drawing::draw_hollow_rect_mut;
 use imageproc::rect::Rect;
+use log::{error, info};
 use onnxruntime::environment::Environment;
 use onnxruntime::GraphOptimizationLevel;
 use onnxruntime::ndarray::Array4;
@@ -10,46 +11,46 @@ use onnxruntime::tensor::OrtOwnedTensor;
 use crate::{model};
 
 pub async fn detect() -> Result<Json<Vec<model::Detection>>, Box<dyn std::error::Error>> {
-    println!("Detect Called!");
+    info!("Detect Called!");
 
     let environment = Environment::builder()
         .with_name("yolo")
         .build()
         .unwrap_or_else(|e| {
-            eprintln!("Error: {}", e);
+            error!("Error: {}", e);
             exit(1);
         });
 
     let session = environment.new_session_builder().unwrap_or_else(|e| {
-        eprintln!("Error: {}", e);
+        error!("Error: {}", e);
         exit(1);
     });
 
     let mut session = session
         .with_optimization_level(GraphOptimizationLevel::Basic)
         .unwrap_or_else(|e| {
-            eprintln!("Error: {}", e);
+            error!("Error: {}", e);
             exit(1);
         })
         .with_number_threads(1)
         .unwrap_or_else(|e| {
-            eprintln!("Error: {}", e);
+            error!("Error: {}", e);
             exit(1);
         })
         .with_model_from_file("best.onnx")
         .unwrap_or_else(|e| {
-            eprintln!("Error: {}", e);
+            error!("Error: {}", e);
             exit(1);
         });
 
     let img = ImageReader::open("test.jpeg")
         .unwrap_or_else(|e| {
-            eprintln!("Error: {}", e);
+            error!("Error: {}", e);
             exit(1);
         })
         .decode()
         .unwrap_or_else(|e| {
-            eprintln!("Error: {}", e);
+            error!("Error: {}", e);
             exit(1);
         });
 
@@ -64,7 +65,7 @@ pub async fn detect() -> Result<Json<Vec<model::Detection>>, Box<dyn std::error:
         input_array[[0, 2, y as usize, x as usize]] = pixel[2] as f32 / 255.0;
     }
 
-    println!("Preprocessing done!");
+    info!("Preprocessing done!");
 
     // =========================
     // 3. Run inference
@@ -72,7 +73,7 @@ pub async fn detect() -> Result<Json<Vec<model::Detection>>, Box<dyn std::error:
     let input_tensor = vec![input_array.clone()];
     let outputs: Vec<OrtOwnedTensor<f32, _>> = session.run(input_tensor)?;
 
-    println!("Inference done!");
+    info!("Inference done!");
 
     // =========================
     // 4. Post-process (basic)
@@ -80,7 +81,7 @@ pub async fn detect() -> Result<Json<Vec<model::Detection>>, Box<dyn std::error:
     let output = &outputs[0];
     let shape = output.shape();
 
-    println!("Output shape: {:?}", shape);
+    info!("Output shape: {:?}", shape);
 
     let num_boxes = shape[2];
 
@@ -93,7 +94,7 @@ pub async fn detect() -> Result<Json<Vec<model::Detection>>, Box<dyn std::error:
             let w = output[[0, 2, i]];
             let h = output[[0, 3, i]];
 
-            println!(
+            info!(
                 "Detected → x: {}, y: {}, w: {}, h: {}, conf: {}",
                 x, y, w, h, conf
             );

@@ -5,25 +5,38 @@ use axum::{
 };
 use futures::{SinkExt, StreamExt};
 use futures::future::join_all;
+use log::info;
+use rand::RngExt;
 
-pub async fn ws_handler(ws: WebSocketUpgrade, req_client: reqwest::Client) -> impl IntoResponse {
-    ws.on_upgrade(|sock| async { handle_socket(sock, req_client).await })
+pub async fn ws_handler(ws: WebSocketUpgrade, req_client: reqwest::Client, config: crate::config::Config) -> impl IntoResponse {
+    ws.on_upgrade(move |sock| async move { handle_socket(sock, req_client, config).await })
 }
 
-async fn handle_socket(socket: WebSocket, req_client: reqwest::Client) {
+async fn handle_socket(socket: WebSocket, req_client: reqwest::Client, config: crate::config::Config) {
     let (mut sender, mut receiver) = socket.split();
 
     tokio::spawn(async move {
         loop {
-            let mut detections = vec![
-                Detection {
-                    bbox: [0.0, 0.0, 1.0, 1.0],
-                    confidence: 0.9,
-                    latitude: -8.02,
-                    longitude: 110.32,
-                    wind_speed: None,
-                }
-            ];
+            let mut detections = {
+                // TODO: real usage of onnx here
+
+                let mut rng = rand::rng();
+
+                vec![
+                    Detection {
+                        bbox: [
+                            rng.random_range(0.0..0.5), // x
+                            rng.random_range(0.0..0.5), // y
+                            rng.random_range(0.5..1.0), // width
+                            rng.random_range(0.5..1.0), // height
+                        ],
+                        confidence: rng.random_range(0.5..1.0),
+                        latitude: rng.random_range(-8.1..-7.9),
+                        longitude: rng.random_range(110.2..110.5),
+                        wind_speed: None,
+                    }
+                ]
+            };
 
             let futures = detections.iter().map(|det| {
                 let client = req_client.clone();
@@ -52,15 +65,15 @@ async fn handle_socket(socket: WebSocket, req_client: reqwest::Client) {
                 break; // client disconnected
             }
 
-            tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+            tokio::time::sleep(std::time::Duration::from_millis(config.general.update_interval)).await;
         }
     });
 
     while let Some(Ok(msg)) = receiver.next().await {
         if let Message::Text(text) = msg {
-            println!("Client says: {}", text);
+            info!("Client says: {}", text);
         }
     }
 
-    println!("Client disconnected");
+    info!("Client disconnected");
 }
