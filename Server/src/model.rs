@@ -26,3 +26,8 @@ pub struct CurrentWeather {
 pub struct ApiResponse {
     pub current_weather: CurrentWeather,
 }
+
+#[derive(Deserialize)]
+pub struct DetectRequest {
+    pub image: String
+}

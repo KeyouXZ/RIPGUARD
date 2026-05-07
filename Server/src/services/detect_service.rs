@@ -1,6 +1,7 @@
 use std::process::exit;
 use axum::Json;
-use image::{ImageReader, Rgb};
+use base64::Engine;
+use image::{load_from_memory, Rgb};
 use imageproc::drawing::draw_hollow_rect_mut;
 use imageproc::rect::Rect;
 use log::{error, info};
@@ -8,9 +9,11 @@ use onnxruntime::environment::Environment;
 use onnxruntime::GraphOptimizationLevel;
 use onnxruntime::ndarray::Array4;
 use onnxruntime::tensor::OrtOwnedTensor;
+use base64::engine::general_purpose::STANDARD;
 use crate::{model};
 
-pub async fn detect() -> Result<Json<Vec<model::Detection>>, Box<dyn std::error::Error>> {
+pub async fn detect(image_b64: String) -> Result<Json<Vec<model::Detection>>, Box<dyn std::error::Error>> {
+    #[cfg(debug_assertions)]
     info!("Detect Called!");
 
     let environment = Environment::builder()
@@ -43,16 +46,11 @@ pub async fn detect() -> Result<Json<Vec<model::Detection>>, Box<dyn std::error:
             exit(1);
         });
 
-    let img = ImageReader::open("test.jpeg")
-        .unwrap_or_else(|e| {
-            error!("Error: {}", e);
-            exit(1);
-        })
-        .decode()
-        .unwrap_or_else(|e| {
-            error!("Error: {}", e);
-            exit(1);
-        });
+    let cleaned = image_b64
+        .replace("data:image/jpeg;base64,", "")
+        .replace("data:image/png;base64,", "");
+    let image_bytes = STANDARD.decode(cleaned)?;
+    let img = load_from_memory(&image_bytes)?;
 
     let img = img.resize_exact(640, 640, image::imageops::FilterType::Triangle);
     let img = img.to_rgb8();
@@ -65,6 +63,7 @@ pub async fn detect() -> Result<Json<Vec<model::Detection>>, Box<dyn std::error:
         input_array[[0, 2, y as usize, x as usize]] = pixel[2] as f32 / 255.0;
     }
 
+    #[cfg(debug_assertions)]
     info!("Preprocessing done!");
 
     // =========================
@@ -73,34 +72,41 @@ pub async fn detect() -> Result<Json<Vec<model::Detection>>, Box<dyn std::error:
     let input_tensor = vec![input_array.clone()];
     let outputs: Vec<OrtOwnedTensor<f32, _>> = session.run(input_tensor)?;
 
+    #[cfg(debug_assertions)]
     info!("Inference done!");
 
     // =========================
     // 4. Post-process (basic)
     // =========================
     let output = &outputs[0];
+
     let shape = output.shape();
 
-    info!("Output shape: {:?}", shape);
-
-    let num_boxes = shape[2];
+    let num_boxes = shape[1];
 
     let mut results = Vec::new();
     for i in 0..num_boxes {
-        let conf = 1.0 / (1.0 + (-output[[0, 4, i]]).exp());
-        if conf > 0.5 {
-            let x = output[[0, 0, i]];
-            let y = output[[0, 1, i]];
-            let w = output[[0, 2, i]];
-            let h = output[[0, 3, i]];
+        let conf = output[[0, i, 4]];
 
+        #[cfg(debug_assertions)]
+        info!("CONF = {}", conf);
+
+        if conf > 0.01 {
+            let x1 = output[[0, i, 0]];
+            let y1 = output[[0, i, 1]];
+            let x2 = output[[0, i, 2]];
+            let y2 = output[[0, i, 3]];
+
+            let class_id = output[[0, i, 5]];
+
+            #[cfg(debug_assertions)]
             info!(
-                "Detected → x: {}, y: {}, w: {}, h: {}, conf: {}",
-                x, y, w, h, conf
+                "Detected → class: {}, conf: {}, x: {}, y: {}, w: {}, h: {}",
+                class_id, conf, x1, y1, x2, y2
             );
 
             results.push(model::Detection {
-                bbox: [x, y, w, h],
+                bbox: [x1, y1, x2, y2],
                 confidence: conf,
 
                 latitude: 0.0,
@@ -112,20 +118,13 @@ pub async fn detect() -> Result<Json<Vec<model::Detection>>, Box<dyn std::error:
     }
 
     // Test purpose
-
     let mut out_img = img.clone();
     for det in &results {
-        // YOLO outputs (x, y, w, h)
-        let cx = det.bbox[0];
-        let cy = det.bbox[1];
-        let w = det.bbox[2];
-        let h = det.bbox[3];
 
-        // Convert center coordinates to top-left
-        let x1 = (cx - w / 2.0).max(0.0) as u32;
-        let y1 = (cy - h / 2.0).max(0.0) as u32;
-        let x2 = (cx + w / 2.0).min(639.0) as u32;
-        let y2 = (cy + h / 2.0).min(639.0) as u32;
+        let x1 = det.bbox[0].max(0.0) as u32;
+        let y1 = det.bbox[1].max(0.0) as u32;
+        let x2 = det.bbox[2].min(639.0) as u32;
+        let y2 = det.bbox[3].min(639.0) as u32;
 
         // Draw a red rectangle
         let rect = Rect::at(x1 as i32, y1 as i32).of_size(x2 - x1, y2 - y1);
