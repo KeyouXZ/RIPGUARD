@@ -56,6 +56,7 @@ impl Config {
 pub struct GeneralConfig {
     pub update_interval: u64, // in milisecond
     pub debug: bool,
+    pub port: u16,
 }
 
 impl Default for GeneralConfig {
@@ -63,6 +64,7 @@ impl Default for GeneralConfig {
         Self {
             update_interval: 5000,
             debug: false,
+            port: 3000,
         }
     }
 }

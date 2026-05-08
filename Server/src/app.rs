@@ -1,5 +1,7 @@
-pub fn create_app(req_client: reqwest::Client, config: crate::config::Config) -> axum::Router {
+use crate::model::AppState;
+
+pub fn create_app(app_state: AppState) -> axum::Router {
     axum::Router::new()
-        .merge(crate::routes::http::routes())
-        .merge(crate::routes::ws::routes(req_client, config))
+        .merge(crate::routes::http::routes(app_state.clone()))
+        .merge(crate::routes::ws::routes(app_state))
 }

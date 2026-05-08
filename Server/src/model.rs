@@ -1,9 +1,25 @@
+use std::sync::Arc;
+use ort::session::Session;
 use serde::{Deserialize, Serialize};
+use tokio::sync::{broadcast, Mutex};
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct BoundingBox {
+    pub x1: f32,
+    pub y1: f32,
+    pub x2: f32,
+    pub y2: f32,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct DetectionResult {
+    pub bbox: BoundingBox,
+    pub confidence: f32,
+}
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Detection {
-    pub bbox: [f32; 4],
-    pub confidence: f32,
+    pub detections: Vec<DetectionResult>,
 
     pub latitude: f64,
     pub longitude: f64,
@@ -30,4 +46,18 @@ pub struct ApiResponse {
 #[derive(Deserialize)]
 pub struct DetectRequest {
     pub image: String
+}
+
+#[derive(Clone)]
+pub struct AppState {
+    pub session: Arc<Mutex<Session>>,
+    pub req_client: reqwest::Client,
+    pub config: crate::config::Config,
+    pub tx: broadcast::Sender<String>,
+}
+
+#[derive(Serialize)]
+pub struct DetectionResponse {
+    pub detections: Vec<DetectionResult>,
+    pub image: String,
 }

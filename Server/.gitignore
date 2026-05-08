@@ -1,3 +1,6 @@
 /target
 /test.jpg
 /processed.jpg
+/config.toml
+/best.onnx
+/frames
