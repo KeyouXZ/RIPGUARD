@@ -19,6 +19,8 @@ cameraView = "1.6.0"
 cameraExtensions = "1.6.0"
 camera2 = "1.6.0"
 foundation = "1.10.6"
+okhttp = "4.12.0"
+gson = "2.14.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -46,6 +48,8 @@ androidx-camera-view = { group = "androidx.camera", name = "camera-view", versio
 androidx-camera-camera2 = { group = "androidx.camera", name = "camera-camera2", version.ref = "camera2" }
 androidx-camera-extensions1 = { group = "androidx.camera", name = "camera-extensions", version.ref = "cameraExtensions" }
 androidx-compose-foundation = { group = "androidx.compose.foundation", name = "foundation", version.ref = "foundation" }
+okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
+gson = { group = "com.google.code.gson", name = "gson", version.ref = "gson" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

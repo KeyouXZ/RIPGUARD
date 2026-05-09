@@ -18,6 +18,8 @@ import com.skyo.ripguard.ui.theme.RIPGUARDTheme
 import com.skyo.ripguard.utility.requestNotificationPermission
 import kotlinx.coroutines.launch
 
+const val BASE_URL = "http://[2407:6ac0:4:a:1234:4321:2197:1]:3000"
+
 @Composable
 fun AppWithToast(context: Context, startTimestamp: Long, intentState: MutableState<Intent?>) {
     val navViewModel = remember { NavbarViewModelSingleton.get() }

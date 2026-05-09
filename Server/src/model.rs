@@ -43,11 +43,6 @@ pub struct ApiResponse {
     pub current_weather: CurrentWeather,
 }
 
-#[derive(Deserialize)]
-pub struct DetectRequest {
-    pub image: String
-}
-
 #[derive(Clone)]
 pub struct AppState {
     pub session: Arc<Mutex<Session>>,
@@ -60,4 +55,11 @@ pub struct AppState {
 pub struct DetectionResponse {
     pub detections: Vec<DetectionResult>,
     pub image: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ErrorReport {
+    pub message: String,
+    pub platform: String,
+    pub source: String,
 }

@@ -35,8 +35,14 @@ pub fn setup_logger(args: &Cli) -> Result<(), fern::InitError> {
 
     Dispatch::new()
         .format(move |out, message, record| {
-            let time_str = chrono::Local::now().format("%H:%M:%S").to_string();
+            let time_str = chrono::Local::now()
+                .format("%d/%m/%Y %H:%M:%S")
+                .to_string();
 
+            #[cfg(debug_assertions)]
+            let target = record.target();
+
+            #[cfg(not(debug_assertions))]
             let target = if verbose { record.target() } else { "RIPGUARD" };
 
             const BLUE: &str = "\x1b[34m";
@@ -50,7 +56,6 @@ pub fn setup_logger(args: &Cli) -> Result<(), fern::InitError> {
             ))
         })
         .level(log_level)
-        .level_for("tracing", log::LevelFilter::Off)
         .chain(std::io::stdout())
         .chain(fern::log_file(log_path)?)
         .apply()?;

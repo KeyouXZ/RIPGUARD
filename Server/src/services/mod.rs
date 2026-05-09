@@ -4,3 +4,4 @@ mod run_detection;
 mod detection;
 mod enrich_weather;
 mod grab_frame;
+mod draw_rect;

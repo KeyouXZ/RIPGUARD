@@ -1,4 +1,5 @@
 use image::RgbImage;
+#[cfg(debug_assertions)]
 use log::info;
 use ndarray::Array4;
 use ort::inputs;
@@ -71,6 +72,7 @@ pub fn run_detection(
         let x2 = data[idx(i, 2)];
         let y2 = data[idx(i, 3)];
 
+        #[cfg(debug_assertions)]
         let class_id = data[idx(i, 5)];
 
         #[cfg(debug_assertions)]

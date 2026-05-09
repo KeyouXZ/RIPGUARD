@@ -1,11 +1,13 @@
 package com.skyo.ripguard.ui.deteksi
 
 import android.annotation.SuppressLint
+import android.widget.Toast
 import androidx.annotation.OptIn
 import androidx.camera.core.AspectRatio
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageAnalysis
+import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
 import androidx.camera.extensions.ExtensionMode
 import androidx.camera.extensions.ExtensionsManager
@@ -15,39 +17,44 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.skyo.ripguard.model.DetectionResult
+import java.io.IOException
+
 
 @SuppressLint("LocalContextResourcesRead")
 @OptIn(ExperimentalGetImage::class)
 @Composable
-fun CameraLogic() {
+fun CameraLogic(onResult: (DetectionResult) -> Unit, onError: (IOException) -> Unit) {
     val lifecycleOwner = LocalLifecycleOwner.current
 
     var cameraRef by remember { mutableStateOf<androidx.camera.core.Camera?>(null) }
     var scale by remember { mutableFloatStateOf(1f) }
-
     var lineOffset by remember { mutableFloatStateOf(0f) }
+
     val context = LocalContext.current
     val primaryColor = MaterialTheme.colorScheme.primary
-    var isScanning by remember { mutableStateOf(true) }
 
-    var lastAnalysisTime by remember { mutableLongStateOf(0L) }
-    val scanDelayMs = 500L
+    val scanRequestedState = remember { mutableStateOf(false) }
 
     Box(
         Modifier
@@ -60,7 +67,6 @@ fun CameraLogic() {
                         val maxZoom = zoomState?.maxZoomRatio ?: 5f
 
                         val newScale = (scale * zoomRatio).coerceIn(minZoom, maxZoom)
-
                         scale = newScale
                         cam.cameraControl.setZoomRatio(newScale)
                     }
@@ -75,39 +81,53 @@ fun CameraLogic() {
                 cameraProviderFuture.addListener({
                     val cameraProvider = cameraProviderFuture.get()
 
-                    val preview = Preview.Builder().setTargetAspectRatio(AspectRatio.RATIO_16_9).build().also {
-                        it.surfaceProvider = previewView.surfaceProvider
-                    }
+                    val preview = Preview.Builder()
+                        .setTargetAspectRatio(AspectRatio.RATIO_16_9)
+                        .build()
+                        .also { it.surfaceProvider = previewView.surfaceProvider }
 
-                    val extensionsManagerFuture = ExtensionsManager.getInstanceAsync(context, cameraProvider)
+                    val extensionsManagerFuture =
+                        ExtensionsManager.getInstanceAsync(context, cameraProvider)
                     val extensionsManager = extensionsManagerFuture.get()
 
                     val baseSelector = CameraSelector.DEFAULT_BACK_CAMERA
-                    val hdrCameraSelector = if (extensionsManager.isExtensionAvailable(baseSelector, ExtensionMode.HDR)) {
-                        extensionsManager.getExtensionEnabledCameraSelector(baseSelector, ExtensionMode.HDR)
+                    val hdrCameraSelector = if (extensionsManager.isExtensionAvailable(
+                            baseSelector, ExtensionMode.HDR
+                        )
+                    ) {
+                        extensionsManager.getExtensionEnabledCameraSelector(
+                            baseSelector, ExtensionMode.HDR
+                        )
                     } else {
                         baseSelector
                     }
 
                     val imageAnalyzer = ImageAnalysis.Builder()
                         .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                        .setTargetResolution(android.util.Size(1280, 720))
+                        .setTargetResolution(android.util.Size(640, 640))
                         .build()
                         .also { analysis ->
-                            analysis.setAnalyzer(ContextCompat.getMainExecutor(context)) { imageProxy ->
-                                val currentTime = System.currentTimeMillis()
+                            analysis.setAnalyzer(
+                                ContextCompat.getMainExecutor(context)
+                            ) { imageProxy ->
+                                if (scanRequestedState.value) {
+                                    scanRequestedState.value = false
 
-                                if (!isScanning || currentTime - lastAnalysisTime < scanDelayMs) {
-                                    imageProxy.close()
-                                    return@setAnalyzer
+                                    val mediaImage = imageProxy.image
+                                    if (mediaImage != null) {
+                                        Toast.makeText(
+                                            context,
+                                            "Scanning image...",
+                                            Toast.LENGTH_LONG
+                                        ).show()
+
+                                        val rotation = imageProxy.imageInfo.rotationDegrees
+
+                                        scanImage(mediaImage, rotation, onResult, onError)
+                                    }
                                 }
 
-                                val mediaImage = imageProxy.image
-                                if (mediaImage != null) {
-                                    // DO LOGIC HERE
-                                } else {
-                                    imageProxy.close()
-                                }
+                                imageProxy.close()
                             }
                         }
 
@@ -168,6 +188,15 @@ fun CameraLogic() {
                     lineOffset = 0f
                 kotlinx.coroutines.delay(16L)
             }
+        }
+
+        Button(
+            onClick = { scanRequestedState.value = true },
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 10.dp)
+        ) {
+            Text("Scan")
         }
     }
 }

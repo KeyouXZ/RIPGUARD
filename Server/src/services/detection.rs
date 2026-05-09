@@ -2,15 +2,18 @@ use std::{
     process::exit,
     sync::Arc
 };
-use image::ImageReader;
+use chrono::Local;
+use image::{ImageFormat, ImageReader};
 use log::error;
 use ort::session::Session;
 use rand::RngExt;
+use tokio::fs;
 use tokio::sync::Mutex;
 use crate::{
     model::{BoundingBox, Detection, DetectionResult},
     services::run_detection::run_detection
 };
+use crate::services::draw_rect::generate_output_img;
 
 pub(crate) fn _fake_detections() -> Detection {
     let mut rng = rand::rng();
@@ -57,6 +60,19 @@ pub(crate) async fn real_detection(session: &Arc<Mutex<Session>>, img_path: &str
             exit(1);
         }
     };
+
+    if !detections.is_empty() {
+        let out_img = generate_output_img(&img, detections.clone());
+
+        // Save the processed image
+        let timestamp = Local::now().format("%Y-%m-%d_%H-%M-%S").to_string();
+        fs::create_dir_all("frames/detected").await.unwrap();
+
+        let output_path = format!("frames/detected/{}.png", timestamp);
+        out_img.save_with_format(output_path, ImageFormat::Jpeg).unwrap_or_else(|e| {
+            error!("Error: {}", e);
+        });
+    }
 
     // TODO: Calculate latitude and longitude
     Detection {
