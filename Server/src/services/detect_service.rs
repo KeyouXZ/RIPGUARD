@@ -1,21 +1,20 @@
 use std::io::Cursor;
 use axum::body::Bytes;
 use base64::Engine;
-use image::load_from_memory;
+use image::{load_from_memory, GenericImage};
 use image::codecs::jpeg::JpegEncoder;
 #[cfg(debug_assertions)]
 use image::ImageFormat;
 #[cfg(debug_assertions)]
 use log::info;
 use base64::engine::general_purpose::STANDARD;
-use ort::session::Session;
 use crate::{
-    model::DetectionResponse,
+    model::{AppState, DetectionResponse},
     services::run_detection::run_detection
 };
 use crate::services::draw_rect::generate_output_img;
 
-pub async fn detect(session: &mut Session, image_bytes: Bytes) -> Result<DetectionResponse, Box<dyn std::error::Error>> {
+pub async fn detect(app_state: &AppState, image_bytes: Bytes) -> Result<DetectionResponse, Box<dyn std::error::Error>> {
     #[cfg(debug_assertions)]
     info!("Detect Called!");
 
@@ -24,25 +23,34 @@ pub async fn detect(session: &mut Session, image_bytes: Bytes) -> Result<Detecti
     let img = img.resize_exact(640, 640, image::imageops::FilterType::Triangle);
     let img = img.to_rgb8();
 
-    let results = run_detection(session, &img)?;
+    // Use reusable buffer to avoid repeated allocations
+    let results = {
+        let mut session = app_state.session.lock().await;
+        let mut input_buffer = app_state.input_buffer.lock().await;
+        run_detection(&mut session, &img, &mut input_buffer)?
+    };
 
-    let out_img = generate_output_img(&img, results.clone());
-
-    // Turn image into base64
-    let mut buffer = Cursor::new(Vec::new());
-    let mut encoder = JpegEncoder::new_with_quality(&mut buffer, 75);
-
-    encoder.encode_image(&out_img)?;
-
-    let image_base64 = STANDARD.encode(buffer.into_inner());
-
-    // Save the processed image
-    #[cfg(debug_assertions)]
-    out_img.save_with_format("processed.jpg", ImageFormat::Jpeg)?;
-
-    let response = DetectionResponse {
-        detections: results,
-        image: image_base64
+    // Use reusable image buffer to avoid clone
+    let response = {
+        let mut image_buffer = app_state.image_buffer.lock().await;
+        image_buffer.copy_from(&img, 0, 0)?;
+        generate_output_img(&mut image_buffer, &results);
+        
+        // Encode while holding lock to prevent extra copies
+        let mut buffer = Cursor::new(Vec::new());
+        let mut encoder = JpegEncoder::new_with_quality(&mut buffer, 75);
+        encoder.encode_image(&*image_buffer)?;
+        
+        let image_base64 = STANDARD.encode(buffer.into_inner());
+        
+        // Save the processed image
+        #[cfg(debug_assertions)]
+        image_buffer.save_with_format("processed.jpg", ImageFormat::Jpeg)?;
+        
+        DetectionResponse {
+            detections: results,
+            image: image_base64
+        }
     };
 
     Ok(response)

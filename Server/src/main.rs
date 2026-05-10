@@ -11,14 +11,16 @@ mod yolo;
 use std::process::exit;
 use std::sync::Arc;
 use clap::Parser;
+use image::RgbImage;
 use log::info;
 use tokio::sync::{broadcast, Mutex};
+use ndarray::Array4;
 use crate::config::Config;
 use crate::model::AppState;
 use crate::services::global_detector::global_detection_loop;
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = cli::Cli::parse();
 
     if let Err(e) = logger::setup_logger(&args) {
@@ -26,7 +28,7 @@ async fn main() {
         exit(1);
     }
 
-    let config_path = args.config_path.unwrap_or_else(|| "config.toml".to_string().parse().unwrap());
+    let config_path = args.config_path.unwrap_or_else(|| "config.toml".parse().unwrap());
     let config = Config::load_or_create(config_path.to_str().unwrap());
 
     let port = match args.port {
@@ -50,13 +52,23 @@ async fn main() {
 
     let (tx, _) = broadcast::channel::<String>(100);
 
+    // Pre-create all required directories to avoid repeated checks
+    tokio::fs::create_dir_all("frames").await?;
+    tokio::fs::create_dir_all("frames/detected").await?;
+    tokio::fs::create_dir_all("reports").await?;
+
+    // Pre-allocate reusable buffers to avoid repeated allocations
+    let input_buffer = Arc::new(Mutex::new(Array4::<f32>::zeros((1, 3, 640, 640))));
+    let image_buffer = Arc::new(Mutex::new(RgbImage::new(640, 640)));
 
     info!("Creating app...");
     let state = AppState {
         session: Arc::new(Mutex::new(session)),
         req_client,
-        config,
-        tx: tx.clone()
+        config: Arc::new(config),
+        tx: tx.clone(),
+        input_buffer,
+        image_buffer,
     };
 
     let detection_state = state.clone();
@@ -78,4 +90,5 @@ async fn main() {
     if let Err(e) = axum::serve(listener, app).await {
         log::error!("Server error: {}", e);
     }
+    Ok(())
 }

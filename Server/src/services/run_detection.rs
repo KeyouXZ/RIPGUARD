@@ -10,23 +10,30 @@ use crate::model;
 pub fn run_detection(
     session: &mut Session,
     img: &RgbImage,
+    input_buffer: &mut Array4<f32>,
 ) -> Result<Vec<model::DetectionResult>, Box<dyn std::error::Error>> {
 
     // =========================
     // Preprocess
     // =========================
-    let mut input_array = Array4::<f32>::zeros((1, 3, 640, 640));
+    // Reuse pre-allocated buffer instead of allocating new one each time
+    input_buffer.fill(0.0);
 
-    for (x, y, pixel) in img.enumerate_pixels() {
-
-        input_array[[0, 0, y as usize, x as usize]] =
-            pixel[0] as f32 / 255.0;
-
-        input_array[[0, 1, y as usize, x as usize]] =
-            pixel[1] as f32 / 255.0;
-
-        input_array[[0, 2, y as usize, x as usize]] =
-            pixel[2] as f32 / 255.0;
+    // Bulk operation: access raw pixel data for better performance
+    let width = img.width() as usize;
+    let height = img.height() as usize;
+    let raw_pixels = img.as_raw();
+    
+    // Process all pixels in bulk - much faster than enumerate_pixels()
+    for (i, chunk) in raw_pixels.chunks_exact(3).enumerate() {
+        let y = i / width;
+        let x = i % width;
+        
+        if y < height && x < width {
+            input_buffer[[0, 0, y, x]] = chunk[0] as f32 / 255.0;
+            input_buffer[[0, 1, y, x]] = chunk[1] as f32 / 255.0;
+            input_buffer[[0, 2, y, x]] = chunk[2] as f32 / 255.0;
+        }
     }
 
     #[cfg(debug_assertions)]
@@ -36,7 +43,7 @@ pub fn run_detection(
     // Inference
     // =========================
 
-    let input_tensor = TensorRef::from_array_view(&input_array)?;
+    let input_tensor = TensorRef::from_array_view(input_buffer)?;
 
     let outputs = session.run(inputs![input_tensor])?;
 

@@ -7,24 +7,23 @@ use axum::{
 };
 
 pub async fn detect_handler(State(state): State<AppState>, mut multipart: Multipart) -> impl IntoResponse {
-    let mut session = state.session.lock().await;
-
     while let Some(field) = multipart.next_field().await.unwrap() {
-        let name = field.name().unwrap_or("").to_string();
+        let name = field.name().unwrap_or("");
 
         if name == "file" {
             let data = field.bytes().await.unwrap();
+            let data_size = data.len();
 
-            let results = crate::services::detect_service::detect(&mut session, data.clone())
+            let results = crate::services::detect_service::detect(&state, data)
                 .await
                 .map_err(|e| (
                     StatusCode::INTERNAL_SERVER_ERROR,
-                    e.to_string()
+                    e
                 )).unwrap();
 
             return Json(serde_json::json!({
                 "success": true,
-                "size": data.len(),
+                "size": data_size,
                 "result": results,
             }));
         }

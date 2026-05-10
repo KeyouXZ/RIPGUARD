@@ -4,8 +4,7 @@ use crate::model::DetectionResult;
 use imageproc::drawing::{draw_filled_rect_mut, draw_hollow_rect_mut, draw_text_mut};
 use imageproc::rect::Rect;
 
-pub fn generate_output_img(img: &RgbImage, results: Vec<DetectionResult>)  -> RgbImage {
-    let mut out_img = img.clone();
+pub fn generate_output_img(img: &mut RgbImage, results: &Vec<DetectionResult>) {
 
     let font_data = include_bytes!("../../assets/fonts/Arial.ttf");
     let font = FontRef::try_from_slice(font_data as &[u8]).unwrap();
@@ -13,7 +12,7 @@ pub fn generate_output_img(img: &RgbImage, results: Vec<DetectionResult>)  -> Rg
     let scale = PxScale::from(20.0);
     let text_offset = 24;
 
-    for det in &results {
+    for det in results {
         let x1 = det.bbox.x1.max(0.0) as i32;
         let y1 = det.bbox.y1.max(0.0) as i32;
         let x2 = det.bbox.x2.min(639.0) as i32;
@@ -22,7 +21,7 @@ pub fn generate_output_img(img: &RgbImage, results: Vec<DetectionResult>)  -> Rg
         let rect = Rect::at(x1, y1).of_size((x2 - x1) as u32, (y2 - y1) as u32);
 
         // draw rectangle
-        draw_hollow_rect_mut(&mut out_img, rect, image::Rgb([255, 0, 0]));
+        draw_hollow_rect_mut(img, rect, image::Rgb([255, 0, 0]));
 
         let label = format!("RIP CURRENT {:.2}%", det.confidence * 100.0);
 
@@ -36,13 +35,13 @@ pub fn generate_output_img(img: &RgbImage, results: Vec<DetectionResult>)  -> Rg
             .of_size(label_width as u32, label_height as u32);
 
         draw_filled_rect_mut(
-            &mut out_img,
+            img,
             label_bg,
             image::Rgb([255, 0, 0]),
         );
 
         draw_text_mut(
-            &mut out_img,
+            img,
             image::Rgb([255, 255, 255]),
             text_x,
             text_y,
@@ -50,7 +49,5 @@ pub fn generate_output_img(img: &RgbImage, results: Vec<DetectionResult>)  -> Rg
             &font,
             &label,
         );
-    };
-
-    out_img
+    }
 }

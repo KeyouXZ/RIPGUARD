@@ -1,7 +1,4 @@
-use std::sync::Arc;
 use log::{error};
-use ort::session::Session;
-use tokio::sync::Mutex;
 use crate::{
     services::{
         detection::real_detection,
@@ -12,15 +9,14 @@ use crate::{
 };
 
 async fn process_detection_cycle(
-    req_client: &reqwest::Client,
-    session: &Arc<Mutex<Session>>
+    app_state: &crate::model::AppState
 ) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
     let frame_path = grab_frame().await?;
 
     //let mut detections = fake_detections();
-    let mut detections = real_detection(session, &frame_path).await;
+    let mut detections = real_detection(app_state, &frame_path).await;
 
-    enrich_weather(req_client, &mut detections).await;
+    enrich_weather(&app_state.req_client, &mut detections).await;
 
     let msg = serde_json::to_string(&detections)?;
 
@@ -32,13 +28,11 @@ pub async fn global_detection_loop(
     app_state: AppState
 ) {
     // TODO: make cache system instead of sending all of the image trough websocket..cuz that will be expensive on resource usage
-    let req_client = app_state.req_client;
-    let config = app_state.config;
-    let tx = app_state.tx;
-    let session = app_state.session;
+    let tx = app_state.tx.clone();
+    let config = app_state.config.clone();
 
     loop {
-        match process_detection_cycle(&req_client, &session).await {
+        match process_detection_cycle(&app_state).await {
 
             Ok(msg) => {
                 let _ = tx.send(msg);

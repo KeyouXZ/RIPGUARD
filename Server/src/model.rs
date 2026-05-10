@@ -1,4 +1,6 @@
 use std::sync::Arc;
+use image::RgbImage;
+use ndarray::Array4;
 use ort::session::Session;
 use serde::{Deserialize, Serialize};
 use tokio::sync::{broadcast, Mutex};
@@ -47,8 +49,10 @@ pub struct ApiResponse {
 pub struct AppState {
     pub session: Arc<Mutex<Session>>,
     pub req_client: reqwest::Client,
-    pub config: crate::config::Config,
+    pub config: Arc<crate::config::Config>,
     pub tx: broadcast::Sender<String>,
+    pub input_buffer: Arc<Mutex<Array4<f32>>>,
+    pub image_buffer: Arc<Mutex<RgbImage>>,
 }
 
 #[derive(Serialize)]

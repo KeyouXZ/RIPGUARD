@@ -1,16 +1,10 @@
-use std::{
-    process::exit,
-    sync::Arc
-};
+use std::process::exit;
 use chrono::Local;
 use image::{ImageFormat, ImageReader};
 use log::error;
-use ort::session::Session;
 use rand::RngExt;
-use tokio::fs;
-use tokio::sync::Mutex;
 use crate::{
-    model::{BoundingBox, Detection, DetectionResult},
+    model::{AppState, BoundingBox, Detection, DetectionResult},
     services::run_detection::run_detection
 };
 use crate::services::draw_rect::generate_output_img;
@@ -34,10 +28,8 @@ pub(crate) fn _fake_detections() -> Detection {
     }
 }
 
-pub(crate) async fn real_detection(session: &Arc<Mutex<Session>>, img_path: &str) -> Detection {
+pub(crate) async fn real_detection(app_state: &AppState, img_path: &str) -> Detection {
     let mut rng = rand::rng();
-
-    let mut session = session.lock().await;
 
     let img = ImageReader::open(img_path)
         .unwrap_or_else(|e| {
@@ -53,7 +45,11 @@ pub(crate) async fn real_detection(session: &Arc<Mutex<Session>>, img_path: &str
     let img = img.resize_exact(640, 640, image::imageops::FilterType::Triangle);
     let img = img.to_rgb8();
 
-    let detections = match run_detection(&mut session, &img) {
+    let detections = match {
+        let mut session = app_state.session.lock().await;
+        let mut input_buffer = app_state.input_buffer.lock().await;
+        run_detection(&mut session, &img, &mut input_buffer)
+    } {
         Ok(detections) => detections,
         Err(e) => {
             error!("Error: {}", e);
@@ -62,12 +58,12 @@ pub(crate) async fn real_detection(session: &Arc<Mutex<Session>>, img_path: &str
     };
 
     if !detections.is_empty() {
-        let out_img = generate_output_img(&img, detections.clone());
+        // Create a mutable copy for drawing
+        let mut out_img = img.clone();
+        generate_output_img(&mut out_img, &detections);
 
         // Save the processed image
-        let timestamp = Local::now().format("%Y-%m-%d_%H-%M-%S").to_string();
-        fs::create_dir_all("frames/detected").await.unwrap();
-
+        let timestamp = Local::now().format("%Y-%m-%d_%H-%M-%S");
         let output_path = format!("frames/detected/{}.png", timestamp);
         out_img.save_with_format(output_path, ImageFormat::Jpeg).unwrap_or_else(|e| {
             error!("Error: {}", e);

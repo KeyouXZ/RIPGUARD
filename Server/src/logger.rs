@@ -8,7 +8,7 @@ use std::time::SystemTime;
 
 pub fn setup_logger(args: &Cli) -> Result<(), fern::InitError> {
     if !args.log_path.exists()
-        && let Err(why) = std::fs::create_dir(args.log_path.clone())
+        && let Err(why) = std::fs::create_dir(&args.log_path)
     {
         error!("Failed to create log directory: {}", why);
         return Err(why.into());
@@ -36,8 +36,7 @@ pub fn setup_logger(args: &Cli) -> Result<(), fern::InitError> {
     Dispatch::new()
         .format(move |out, message, record| {
             let time_str = chrono::Local::now()
-                .format("%d/%m/%Y %H:%M:%S")
-                .to_string();
+                .format("%d/%m/%Y %H:%M:%S");
 
             #[cfg(debug_assertions)]
             let target = record.target();

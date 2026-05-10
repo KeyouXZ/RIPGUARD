@@ -4,14 +4,13 @@ use axum::{
 };
 use chrono::Local;
 use log::info;
-use tokio::{fs, fs::OpenOptions, io::AsyncWriteExt};
+use tokio::{fs::OpenOptions, io::AsyncWriteExt};
 use crate::model::ErrorReport;
 
 pub async fn report_handler(Json(payload): Json<ErrorReport>) -> impl IntoResponse {
     info!("Report Received!");
 
-    fs::create_dir_all("reports").await.unwrap();
-    let timestamp = Local::now().format("%Y-%m-%d_%H-%M-%S").to_string();
+    let timestamp = Local::now().format("%Y-%m-%d_%H-%M-%S");
     let output_path = format!("reports/{}-{}.log", timestamp, payload.source);
 
     let mut file = OpenOptions::new()
@@ -22,7 +21,7 @@ pub async fn report_handler(Json(payload): Json<ErrorReport>) -> impl IntoRespon
         .unwrap();
 
     let log = format!(
-        "\n--- ERROR REPORT ---\nplatform: {}\nsource: {}\nmessage:\n{}\n",
+        "--- ERROR REPORT ---\nplatform: {}\nsource: {}\nmessage:\n{}\n",
         payload.platform, payload.source, payload.message
     );
 
