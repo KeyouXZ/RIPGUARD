@@ -32,7 +32,8 @@ fun DeteksiScreen(chromeController: ChromeController, topBar: @Composable () -> 
                     data = res
                 },
                 { e ->
-                   error = e
+                    showAlert = true
+                    error = e
                 }
             )
         }

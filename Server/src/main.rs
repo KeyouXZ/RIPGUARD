@@ -67,7 +67,7 @@ async fn main() {
 
     let app = app::create_app(state);
 
-    let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", port)).await;
+    let listener = tokio::net::TcpListener::bind(format!("[::]:{}", port)).await;
     let listener = listener.unwrap_or_else(|e| {
         log::error!("Error: {}", e);
         exit(1);

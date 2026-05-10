@@ -3,14 +3,11 @@ package com.skyo.ripguard.ui.deteksi
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.media.Image
-import android.os.Build
-import androidx.annotation.RequiresApi
-import com.skyo.ripguard.BASE_URL
+import com.skyo.ripguard.ConfigManager
 import com.skyo.ripguard.model.DetectionResult
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.IOException
-import kotlin.io.encoding.Base64
 
 fun Image.toJpegBytes(rotationDegrees: Int): ByteArray {
     val yPlane = planes[0]
@@ -101,7 +98,7 @@ fun scanImage(image: Image, rotationDegrees: Int, onResult: (DetectionResult) ->
         .build()
 
     val request = okhttp3.Request.Builder()
-        .url("$BASE_URL/detect")
+        .url("${ConfigManager.BASE_URL}/detect")
         .post(multipartBody)
         .build()
 

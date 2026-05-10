@@ -5,7 +5,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import com.skyo.ripguard.BASE_URL
+import com.skyo.ripguard.ConfigManager
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.IOException
@@ -24,7 +24,7 @@ fun reportError(error: String) {
     val body = json.toRequestBody("application/json".toMediaType())
 
     val request = okhttp3.Request.Builder()
-        .url("$BASE_URL/report")
+        .url("$${ConfigManager.BASE_URL}/report")
         .post(body)
         .build()
 
