@@ -12,6 +12,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.skyo.ripguard.ui.navbar.NavDrawer
 import com.skyo.ripguard.ui.theme.RIPGUARDTheme
@@ -58,6 +59,8 @@ class MainActivity : ComponentActivity() {
 
         lifecycleScope.launch {
             ConfigManager.load(this@MainActivity)
+
+            ContextCompat.startForegroundService(this@MainActivity, Intent(this@MainActivity, WSService::class.java))
         }
     }
 }

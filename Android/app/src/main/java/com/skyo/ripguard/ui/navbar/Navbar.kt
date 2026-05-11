@@ -58,15 +58,6 @@ import com.skyo.ripguard.viewmodel.NavbarViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
-@Composable
-fun DummyScreen(chrome: ChromeController, text: String, topBar: @Composable () -> Unit) {
-    UseChrome(chrome, topBar)
-
-    Box {
-        Text(text)
-    }
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DefaultTopBar(
@@ -220,13 +211,7 @@ fun NavDrawer(
                     })
                 }
                 composable("lokasi") {
-                    LokasiScreen(chrome, @Composable {
-                        DefaultTopBar(
-                            navController,
-                            drawerState,
-                            scope
-                        )
-                    })
+                    LokasiScreen(chrome, navController, drawerState, scope)
                 }
                 composable("deteksi") {
                     DeteksiScreen(chrome, @Composable {

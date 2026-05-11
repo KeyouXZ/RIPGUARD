@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.BottomSheetScaffold
+import androidx.compose.material3.DrawerState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.ModalBottomSheet
@@ -21,8 +22,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.navigation.NavController
 import com.skyo.ripguard.controller.ChromeController
 import com.skyo.ripguard.controller.UseChrome
+import kotlinx.coroutines.CoroutineScope
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
@@ -32,8 +35,14 @@ import org.osmdroid.views.overlay.Polygon
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LokasiScreen(chrome: ChromeController, topBar: @Composable () -> Unit) {
-    UseChrome(chrome, topBar)
+fun LokasiScreen(chrome: ChromeController, navController: NavController, drawerState: DrawerState, scope: CoroutineScope) {
+    UseChrome(chrome, topBar = {
+        LocationTopBar(
+            navController,
+            drawerState,
+            scope
+        )
+    })
 
     val context = LocalContext.current
     var showBottomSheet by remember { mutableStateOf(false) }

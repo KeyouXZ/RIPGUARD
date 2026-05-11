@@ -1,6 +1,7 @@
 package com.skyo.ripguard.viewmodel
 
 import androidx.lifecycle.ViewModel
+import com.skyo.ripguard.R
 import com.skyo.ripguard.model.Education
 import com.skyo.ripguard.model.EducationContent
 
@@ -11,7 +12,9 @@ class EducationViewModel : ViewModel() {
             id = 0,
             title = "Mengenal Arus Balik",
             contents = listOf(
-                EducationContent.Text("   Banyak yang salah kaprah menganggap arus ini sebagai \"ombak besar\". Padahal, rip current adalah aliran air sempit yang bergerak sangat kuat menjauhi pantai. Bayangkan seperti sungai kecil di tengah laut yang justru mengalir ke arah laut lepas, bukan ke arah daratan.\n" +
+                EducationContent.Image(R.drawable.rip_current),
+                EducationContent.Text("\n" +
+                        "   Banyak yang salah kaprah menganggap arus ini sebagai \"ombak besar\". Padahal, rip current adalah aliran air sempit yang bergerak sangat kuat menjauhi pantai. Bayangkan seperti sungai kecil di tengah laut yang justru mengalir ke arah laut lepas, bukan ke arah daratan.\n" +
                         "\n" +
                         "   Arus ini terbentuk karena akumulasi air yang dibawa ombak ke pantai harus kembali ke laut. Air mencari jalan keluar yang paling mudah, biasanya melalui celah di antara gundukan pasir bawah laut, sehingga menciptakan aliran keluar yang sangat deras dan mematikan.")
             )
@@ -54,16 +57,14 @@ class EducationViewModel : ViewModel() {
             id = 3,
             title = "Protokol Penyelamatan",
             contents = listOf(
-                EducationContent.Text("Langkah-langkah untuk meloloskan diri dari Rip current \n" +
-                        "\n" +
+                EducationContent.Text("Langkah-langkah untuk meloloskan diri dari Rip current:\n" +
                         "1. Tetap tenang dan jangan mencoba untuk melawan arus rip current atau berenang ke arah pantai,\n" +
                         "2. Cobalah untuk mengapung\n" +
                         "3. Kamu bisa menggunakan 2 cara yaitu berenang ke samping atau biarkan tubuh mu terseret arus rip current sampai keluar dari arus rip current\n" +
                         "4. Saat merasa lelah cobalah untuk mengapung dan melambaikan tangan untuk meminta tolong\n" +
                         "5. Jika sudah keluar dari arus rip current berenanglah ke tepian" +
                         "\n"),
-                EducationContent.Text("Cara untuk menyelamatkan orang yang terseret Rip current \n" +
-                        "\n" +
+                EducationContent.Text("Cara untuk menyelamatkan orang yang terseret Rip current:\n" +
                         "1. Jangan coba coba untuk berenang ke arah korban ini hanya menyebabkan kamu ikut terjebak di Rip current\n" +
                         "2. Cobalah untuk mencari bantuan seperti tim penyelamat\n" +
                         "3. Kalau tidak ada cobalah untuk melempar benda yang dapat mengapung ke arah korban untuk membantu korban mengapung")

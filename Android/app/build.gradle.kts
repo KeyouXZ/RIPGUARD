@@ -33,6 +33,7 @@ android {
             )
             multiDexEnabled = true
             signingConfig = signingConfigs.getByName("debug")
+            isMinifyEnabled = true
         }
         getByName("debug") {
             applicationIdSuffix = ".debug"

@@ -1,6 +1,7 @@
 package com.skyo.ripguard
 
 import android.content.Context
+import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
@@ -16,14 +17,14 @@ object ConfigManager {
 
     suspend fun load(context: Context) = withContext(Dispatchers.IO) {
         try {
-            println("Loading BASE_URL...!")
+            Log.d("Config","Loading BASE_URL...!")
             val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
             // Load cached URL first
             BASE_URL = prefs.getString(KEY_BASE_URL, BASE_URL) ?: BASE_URL
 
             val url =
-                "https://raw.githubusercontent.com/KeyouXZ/RIPGUARD/config/ripguard.json"
+                "https://raw.githubusercontent.com/KeyouXZ/RIPGUARD/refs/heads/main/config/ripguard.json"
 
             val client = OkHttpClient()
 
@@ -38,6 +39,7 @@ object ConfigManager {
 
                 val json = JSONObject(body!!)
                 val remoteUrl = json.getString("base_url")
+                Log.d("Config", "REMOTE URL: $remoteUrl")
 
                 BASE_URL = remoteUrl
 
@@ -45,6 +47,8 @@ object ConfigManager {
                 prefs.edit {
                     putString(KEY_BASE_URL, remoteUrl)
                 }
+
+                Log.d("Config", "BASE_URL: $BASE_URL")
             }
         } catch (e: Exception) {
             e.printStackTrace()
