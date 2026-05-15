@@ -1,18 +1,15 @@
+use crate::model;
 use image::RgbImage;
 #[cfg(debug_assertions)]
 use log::info;
 use ndarray::Array4;
-use ort::inputs;
-use ort::session::Session;
-use ort::value::TensorRef;
-use crate::model;
+use ort::{inputs, session::Session, value::TensorRef};
 
 pub fn run_detection(
     session: &mut Session,
     img: &RgbImage,
     input_buffer: &mut Array4<f32>,
 ) -> Result<Vec<model::DetectionResult>, Box<dyn std::error::Error>> {
-
     // =========================
     // Preprocess
     // =========================
@@ -23,12 +20,12 @@ pub fn run_detection(
     let width = img.width() as usize;
     let height = img.height() as usize;
     let raw_pixels = img.as_raw();
-    
+
     // Process all pixels in bulk - much faster than enumerate_pixels()
     for (i, chunk) in raw_pixels.chunks_exact(3).enumerate() {
         let y = i / width;
         let x = i % width;
-        
+
         if y < height && x < width {
             input_buffer[[0, 0, y, x]] = chunk[0] as f32 / 255.0;
             input_buffer[[0, 1, y, x]] = chunk[1] as f32 / 255.0;
@@ -54,20 +51,16 @@ pub fn run_detection(
     // Postprocess
     // =========================
 
-    let (shape, data) = outputs[0]
-        .try_extract_tensor::<f32>()?;
+    let (shape, data) = outputs[0].try_extract_tensor::<f32>()?;
 
     let num_boxes = shape[1] as usize;
     let num_attrs = shape[2] as usize;
 
-    let idx = |box_idx: usize, attr_idx: usize| -> usize {
-        box_idx * num_attrs + attr_idx
-    };
+    let idx = |box_idx: usize, attr_idx: usize| -> usize { box_idx * num_attrs + attr_idx };
 
     let mut results = Vec::new();
 
     for i in 0..num_boxes {
-
         let conf = data[idx(i, 4)];
 
         if conf <= 0.5 {
@@ -83,19 +76,10 @@ pub fn run_detection(
         let class_id = data[idx(i, 5)];
 
         #[cfg(debug_assertions)]
-        info!(
-            "Detected → class: {}, conf: {}",
-            class_id,
-            conf
-        );
+        info!("Detected → class: {}, conf: {}", class_id, conf);
 
         results.push(model::DetectionResult {
-            bbox: model::BoundingBox {
-                x1,
-                y1,
-                x2,
-                y2,
-            },
+            bbox: model::BoundingBox { x1, y1, x2, y2 },
             confidence: conf,
         });
     }

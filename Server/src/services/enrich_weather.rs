@@ -1,5 +1,5 @@
-use std::time::Duration;
 use crate::model::{ApiResponse, Detection};
+use std::time::Duration;
 
 pub(crate) async fn enrich_weather(client: &reqwest::Client, detection: &mut Detection) {
     let url = format!(
@@ -8,10 +8,10 @@ pub(crate) async fn enrich_weather(client: &reqwest::Client, detection: &mut Det
     );
 
     let wind_speed = async {
-        let res = tokio::time::timeout(
-            Duration::from_secs(5),
-            client.get(&url).send()
-        ).await.ok()?.unwrap();
+        let res = tokio::time::timeout(Duration::from_secs(5), client.get(&url).send())
+            .await
+            .ok()?
+            .unwrap();
 
         let data = res.json::<ApiResponse>().await.ok()?;
 

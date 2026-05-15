@@ -35,8 +35,7 @@ pub fn setup_logger(args: &Cli) -> Result<(), fern::InitError> {
 
     Dispatch::new()
         .format(move |out, message, record| {
-            let time_str = chrono::Local::now()
-                .format("%d/%m/%Y %H:%M:%S");
+            let time_str = chrono::Local::now().format("%d/%m/%Y %H:%M:%S");
 
             #[cfg(debug_assertions)]
             let target = record.target();

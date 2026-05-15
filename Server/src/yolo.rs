@@ -1,5 +1,5 @@
+use ort::session::Session;
 use std::process::exit;
-use ort::{session::Session};
 
 pub fn create_yolov8_session() -> Session {
     Session::builder()

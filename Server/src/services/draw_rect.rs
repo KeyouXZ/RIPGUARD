@@ -1,11 +1,12 @@
+use crate::model::DetectionResult;
 use ab_glyph::{FontRef, PxScale};
 use image::RgbImage;
-use crate::model::DetectionResult;
-use imageproc::drawing::{draw_filled_rect_mut, draw_hollow_rect_mut, draw_text_mut};
-use imageproc::rect::Rect;
+use imageproc::{
+    drawing::{draw_filled_rect_mut, draw_hollow_rect_mut, draw_text_mut},
+    rect::Rect,
+};
 
 pub fn generate_output_img(img: &mut RgbImage, results: &Vec<DetectionResult>) {
-
     let font_data = include_bytes!("../../assets/fonts/Arial.ttf");
     let font = FontRef::try_from_slice(font_data as &[u8]).unwrap();
 
@@ -31,14 +32,9 @@ pub fn generate_output_img(img: &mut RgbImage, results: &Vec<DetectionResult>) {
         let label_width = (label.len() as i32 + 1) * 10;
         let label_height = 22;
 
-        let label_bg = Rect::at(text_x, text_y)
-            .of_size(label_width as u32, label_height as u32);
+        let label_bg = Rect::at(text_x, text_y).of_size(label_width as u32, label_height as u32);
 
-        draw_filled_rect_mut(
-            img,
-            label_bg,
-            image::Rgb([255, 0, 0]),
-        );
+        draw_filled_rect_mut(img, label_bg, image::Rgb([255, 0, 0]));
 
         draw_text_mut(
             img,

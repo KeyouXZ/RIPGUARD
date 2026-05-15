@@ -1,23 +1,20 @@
-mod routes;
-mod handlers;
-mod services;
-mod model;
 mod app;
-mod logger;
 mod cli;
 mod config;
+mod handlers;
+mod logger;
+mod model;
+mod routes;
+mod services;
 mod yolo;
 
-use std::process::exit;
-use std::sync::Arc;
+use crate::{config::Config, model::AppState, services::global_detector::global_detection_loop};
 use clap::Parser;
 use image::RgbImage;
 use log::info;
-use tokio::sync::{broadcast, Mutex};
 use ndarray::Array4;
-use crate::config::Config;
-use crate::model::AppState;
-use crate::services::global_detector::global_detection_loop;
+use std::{process::exit, sync::Arc, time::Duration};
+use tokio::sync::{Mutex, broadcast};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -28,14 +25,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         exit(1);
     }
 
-    let config_path = args.config_path.unwrap_or_else(|| "config.toml".parse().unwrap());
+    let config_path = args
+        .config_path
+        .unwrap_or_else(|| "config.toml".parse().unwrap());
     let config = Config::load_or_create(config_path.to_str().unwrap());
 
     let port = match args.port {
         Some(x) => x,
         None => config.general.port,
     };
-    
+
     info!("Loading model...");
     let session = yolo::create_yolov8_session();
     info!("Model loaded!");
@@ -75,6 +74,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tokio::task::spawn_blocking(move || {
         let rt = tokio::runtime::Handle::current();
         rt.block_on(global_detection_loop(detection_state));
+    });
+
+    info!("Starting file deletor...");
+    tokio::spawn(async move {
+        crate::services::file_deletor::start_file_deletor(
+            Duration::from_secs(config.general.update_interval / 1000), // milis to second
+            "frames",
+            1_073_741_824, // 1GB
+        )
+        .await;
     });
 
     let app = app::create_app(state);

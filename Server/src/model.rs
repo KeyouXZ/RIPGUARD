@@ -1,9 +1,9 @@
-use std::sync::Arc;
 use image::RgbImage;
 use ndarray::Array4;
 use ort::session::Session;
 use serde::{Deserialize, Serialize};
-use tokio::sync::{broadcast, Mutex};
+use std::sync::Arc;
+use tokio::sync::{Mutex, broadcast};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct BoundingBox {
@@ -31,13 +31,13 @@ pub struct Detection {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CurrentWeather {
-    pub time: String, // iso8601
-    pub interval: i32, // seconds
-    pub temperature: f64, // °C
-    pub windspeed: f64, // km/h
+    pub time: String,       // iso8601
+    pub interval: i32,      // seconds
+    pub temperature: f64,   // °C
+    pub windspeed: f64,     // km/h
     pub winddirection: i32, // °
-    pub is_day: i32, //
-    pub weathercode: i32, // wmo code
+    pub is_day: i32,        //
+    pub weathercode: i32,   // wmo code
 }
 
 #[derive(Deserialize)]

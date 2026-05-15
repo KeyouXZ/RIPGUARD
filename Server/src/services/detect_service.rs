@@ -1,20 +1,23 @@
-use std::io::Cursor;
-use axum::body::Bytes;
-use base64::Engine;
-use image::{load_from_memory, GenericImage};
-use image::codecs::jpeg::JpegEncoder;
-#[cfg(debug_assertions)]
-use image::ImageFormat;
-#[cfg(debug_assertions)]
-use log::info;
-use base64::engine::general_purpose::STANDARD;
+use crate::services::draw_rect::generate_output_img;
 use crate::{
     model::{AppState, DetectionResponse},
-    services::run_detection::run_detection
+    services::run_detection::run_detection,
 };
-use crate::services::draw_rect::generate_output_img;
+use axum::body::Bytes;
+use base64::Engine;
+use base64::engine::general_purpose::STANDARD;
+#[cfg(debug_assertions)]
+use image::ImageFormat;
+use image::codecs::jpeg::JpegEncoder;
+use image::{GenericImage, load_from_memory};
+#[cfg(debug_assertions)]
+use log::info;
+use std::io::Cursor;
 
-pub async fn detect(app_state: &AppState, image_bytes: Bytes) -> Result<DetectionResponse, Box<dyn std::error::Error>> {
+pub async fn detect(
+    app_state: &AppState,
+    image_bytes: Bytes,
+) -> Result<DetectionResponse, Box<dyn std::error::Error>> {
     #[cfg(debug_assertions)]
     info!("Detect Called!");
 
@@ -35,21 +38,21 @@ pub async fn detect(app_state: &AppState, image_bytes: Bytes) -> Result<Detectio
         let mut image_buffer = app_state.image_buffer.lock().await;
         image_buffer.copy_from(&img, 0, 0)?;
         generate_output_img(&mut image_buffer, &results);
-        
+
         // Encode while holding lock to prevent extra copies
         let mut buffer = Cursor::new(Vec::new());
         let mut encoder = JpegEncoder::new_with_quality(&mut buffer, 75);
         encoder.encode_image(&*image_buffer)?;
-        
+
         let image_base64 = STANDARD.encode(buffer.into_inner());
-        
+
         // Save the processed image
         #[cfg(debug_assertions)]
         image_buffer.save_with_format("processed.jpg", ImageFormat::Jpeg)?;
-        
+
         DetectionResponse {
             detections: results,
-            image: image_base64
+            image: image_base64,
         }
     };
 
