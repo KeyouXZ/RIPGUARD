@@ -1,34 +1,56 @@
 use crate::{
-    model::AppState,
+    model::{AppState, Payload},
     services::{detection::real_detection, enrich_weather::enrich_weather, grab_frame::grab_frame},
 };
 use log::error;
 
 async fn process_detection_cycle(
     app_state: &crate::model::AppState,
-) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
+) -> Result<Option<String>, Box<dyn std::error::Error + Send + Sync>> {
+    const MAX_CACHE: usize = 100;
+
     let frame_path = grab_frame().await?;
 
     //let mut detections = fake_detections();
     let mut detections = real_detection(app_state, &frame_path).await;
 
+    if detections.detections.is_empty() {
+        return Ok(None);
+    }
+
     enrich_weather(&app_state.req_client, &mut detections).await;
 
-    let msg = serde_json::to_string(&detections)?;
+    let payload = Payload::Detection(detections.clone());
+    let msg = serde_json::to_string(&payload)?;
 
-    Ok(msg)
+    // cache system
+    {
+        let mut cache = app_state.cache.lock().await;
+        let ttl = app_state.config.general.update_interval;
+
+        cache.push_back(detections);
+
+        cache.retain(|item| !item.is_expired(ttl));
+
+        while cache.len() > MAX_CACHE {
+            cache.pop_front();
+        }
+    }
+
+    Ok(Some(msg))
 }
 
 pub async fn global_detection_loop(app_state: AppState) {
-    // TODO: make cache system instead of sending all of the image trough websocket..cuz that will be expensive on resource usage
     let tx = app_state.tx.clone();
     let config = app_state.config.clone();
 
     loop {
         match process_detection_cycle(&app_state).await {
-            Ok(msg) => {
+            Ok(Some(msg)) => {
                 let _ = tx.send(msg);
             }
+
+            Ok(None) => {}
 
             Err(err) => {
                 error!("Detection error: {}", err);

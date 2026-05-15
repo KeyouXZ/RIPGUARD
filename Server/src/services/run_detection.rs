@@ -62,8 +62,9 @@ pub fn run_detection(
 
     for i in 0..num_boxes {
         let conf = data[idx(i, 4)];
+        let class_id = data[idx(i, 5)];
 
-        if conf <= 0.5 {
+        if conf <= 0.5 || class_id != 1.0 {
             continue;
         }
 
@@ -73,14 +74,14 @@ pub fn run_detection(
         let y2 = data[idx(i, 3)];
 
         #[cfg(debug_assertions)]
-        let class_id = data[idx(i, 5)];
-
-        #[cfg(debug_assertions)]
         info!("Detected → class: {}, conf: {}", class_id, conf);
 
+        // TODO: Calculate latitude and longitude
         results.push(model::DetectionResult {
             bbox: model::BoundingBox { x1, y1, x2, y2 },
             confidence: conf,
+            latitude: None,
+            longitude: None,
         });
     }
 

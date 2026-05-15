@@ -2,9 +2,18 @@ use crate::model::{ApiResponse, Detection};
 use std::time::Duration;
 
 pub(crate) async fn enrich_weather(client: &reqwest::Client, detection: &mut Detection) {
+    let Some(first_detection) = detection.detections.first() else {
+        return;
+    };
+
+    let (Some(latitude), Some(longitude)) = (first_detection.latitude, first_detection.longitude)
+    else {
+        return;
+    };
+
     let url = format!(
         "https://api.open-meteo.com/v1/forecast?latitude={}&longitude={}&current_weather=true",
-        detection.latitude, detection.longitude
+        latitude, longitude
     );
 
     let wind_speed = async {

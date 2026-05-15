@@ -21,16 +21,16 @@ pub(crate) fn _fake_detections() -> Detection {
                 y2: rng.random_range(0.5..1.0),
             },
             confidence: rng.random_range(0.5..1.0),
+            latitude: None,
+            longitude: None,
         }],
-        latitude: rng.random_range(-8.1..-7.9),
-        longitude: rng.random_range(110.2..110.5),
         wind_speed: None,
+        created_at: std::time::SystemTime::now(),
+        image_path: None,
     }
 }
 
 pub(crate) async fn real_detection(app_state: &AppState, img_path: &str) -> Detection {
-    let mut rng = rand::rng();
-
     let img = ImageReader::open(img_path)
         .unwrap_or_else(|e| {
             error!("Error: {}", e);
@@ -45,17 +45,22 @@ pub(crate) async fn real_detection(app_state: &AppState, img_path: &str) -> Dete
     let img = img.resize_exact(640, 640, image::imageops::FilterType::Triangle);
     let img = img.to_rgb8();
 
-    let detections = match {
+    let res = {
         let mut session = app_state.session.lock().await;
         let mut input_buffer = app_state.input_buffer.lock().await;
+
         run_detection(&mut session, &img, &mut input_buffer)
-    } {
+    };
+
+    let detections = match res {
         Ok(detections) => detections,
         Err(e) => {
             error!("Error: {}", e);
             exit(1);
         }
     };
+
+    let mut output_path = None;
 
     if !detections.is_empty() {
         // Create a mutable copy for drawing
@@ -64,19 +69,21 @@ pub(crate) async fn real_detection(app_state: &AppState, img_path: &str) -> Dete
 
         // Save the processed image
         let timestamp = Local::now().format("%Y-%m-%d_%H-%M-%S");
-        let output_path = format!("frames/detected/{}.png", timestamp);
+        output_path = Some(format!("frames/detected/{}.png", timestamp));
         out_img
-            .save_with_format(output_path, ImageFormat::Jpeg)
+            .save_with_format(
+                output_path.as_deref().unwrap_or_default(),
+                ImageFormat::Jpeg,
+            )
             .unwrap_or_else(|e| {
                 error!("Error: {}", e);
             });
     }
 
-    // TODO: Calculate latitude and longitude
     Detection {
         detections,
-        latitude: rng.random_range(-8.1..-7.9),
-        longitude: rng.random_range(110.2..110.5),
         wind_speed: None,
+        created_at: std::time::SystemTime::now(),
+        image_path: output_path,
     }
 }

@@ -8,12 +8,16 @@ mod routes;
 mod services;
 mod yolo;
 
-use crate::{config::Config, model::AppState, services::global_detector::global_detection_loop};
+use crate::{
+    config::Config,
+    model::{AppState, Detection},
+    services::global_detector::global_detection_loop,
+};
 use clap::Parser;
 use image::RgbImage;
 use log::info;
 use ndarray::Array4;
-use std::{process::exit, sync::Arc, time::Duration};
+use std::{collections::VecDeque, process::exit, sync::Arc, time::Duration};
 use tokio::sync::{Mutex, broadcast};
 
 #[tokio::main]
@@ -59,6 +63,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Pre-allocate reusable buffers to avoid repeated allocations
     let input_buffer = Arc::new(Mutex::new(Array4::<f32>::zeros((1, 3, 640, 640))));
     let image_buffer = Arc::new(Mutex::new(RgbImage::new(640, 640)));
+    let cache = Arc::new(Mutex::new(VecDeque::<Detection>::new()));
 
     info!("Creating app...");
     let state = AppState {
@@ -68,6 +73,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         tx: tx.clone(),
         input_buffer,
         image_buffer,
+        cache,
     };
 
     let detection_state = state.clone();

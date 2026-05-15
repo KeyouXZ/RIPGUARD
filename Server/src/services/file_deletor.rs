@@ -26,7 +26,7 @@ async fn get_oldest_files(path: &str) -> std::io::Result<Vec<(std::path::PathBuf
         }
     }
     // Oldest first
-    files.sort_by(|a, b| a.1.cmp(&b.1));
+    files.sort_by_key(|a| a.1);
     Ok(files.into_iter().map(|(p, _, s)| (p, s)).collect())
 }
 
