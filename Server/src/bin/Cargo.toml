@@ -1,0 +1,20 @@
+[package]
+name = "ripguard"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow.workspace = true
+tokio.workspace = true
+reqwest.workspace = true
+log.workspace = true
+axum.workspace = true
+image.workspace = true
+ndarray.workspace = true
+libloading.workspace = true
+ripguard-service.workspace = true
+ripguard-cli.workspace = true
+ripguard-logger.workspace = true
+ripguard-adapter.workspace = true
+ripguard-config.workspace = true
+ripguard-model.workspace = true

@@ -1,0 +1,12 @@
+[package]
+name = "ripguard-adapter"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+axum.workspace = true
+log.workspace = true
+ort.workspace = true
+ripguard-route.workspace = true
+ripguard-handler.workspace = true
+ripguard-model.workspace = true

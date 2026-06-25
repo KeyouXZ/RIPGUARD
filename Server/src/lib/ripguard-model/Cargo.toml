@@ -1,0 +1,13 @@
+[package]
+name = "ripguard-model"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+serde.workspace = true
+tokio.workspace = true
+ort.workspace = true
+ndarray.workspace = true
+reqwest.workspace = true
+image.workspace = true
+ripguard-config.workspace = true

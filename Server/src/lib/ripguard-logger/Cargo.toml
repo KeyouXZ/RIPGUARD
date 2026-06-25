@@ -1,0 +1,11 @@
+[package]
+name = "ripguard-logger"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+fern.workspace = true
+humantime.workspace = true
+log.workspace = true
+ripguard-cli.workspace = true
+chrono.workspace = true
