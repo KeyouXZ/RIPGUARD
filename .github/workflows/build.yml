@@ -42,7 +42,7 @@ jobs:
 
           mkdir -p dist/lib
 
-          cp Server/target/x86_64-unknown-linux-gnu.2.31/max/ripguard dist/
+          cp Server/target/x86_64-unknown-linux-gnu/max/ripguard dist/
           cp Server/lib/libonnxruntime.so dist/lib/
 
           tar -czf ripguard-linux.tar.gz -C dist .
