@@ -2,74 +2,25 @@ package com.skyo.ripguard.ui.deteksi
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.media.Image
+import android.util.Log
 import com.skyo.ripguard.ConfigManager
 import com.skyo.ripguard.model.DetectionResult
+import com.skyo.ripguard.viewmodel.DetectionViewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
 import okhttp3.RequestBody.Companion.toRequestBody
+import java.io.ByteArrayOutputStream
 import java.io.IOException
+import java.util.concurrent.TimeUnit
 
-fun Image.toJpegBytes(rotationDegrees: Int): ByteArray {
-    val yPlane = planes[0]
-    val uPlane = planes[1]
-    val vPlane = planes[2]
 
-    val yBuffer = yPlane.buffer
-    val uBuffer = uPlane.buffer
-    val vBuffer = vPlane.buffer
-
-    val yRowStride = yPlane.rowStride
-    val uvRowStride = uPlane.rowStride
-    val uvPixelStride = uPlane.pixelStride
-
-    // Manually build a clean NV21 byte array respecting strides
-    val nv21 = ByteArray(width * height * 3 / 2)
-
-    // Copy Y plane row by row
-    for (row in 0 until height) {
-        yBuffer.position(row * yRowStride)
-        yBuffer.get(nv21, row * width, width)
-    }
-
-    // Copy VU interleaved (NV21) row by row
-    val uvHeight = height / 2
-    val uvWidth = width / 2
-    for (row in 0 until uvHeight) {
-        for (col in 0 until uvWidth) {
-            val vPos = row * uvRowStride + col * uvPixelStride
-            val uPos = row * uvRowStride + col * uvPixelStride
-            val nv21Pos = width * height + row * width + col * 2
-
-            vBuffer.position(vPos)
-            nv21[nv21Pos] = vBuffer.get()
-
-            uBuffer.position(uPos)
-            nv21[nv21Pos + 1] = uBuffer.get()
-        }
-    }
-
-    val yuvImage = android.graphics.YuvImage(
-        nv21, android.graphics.ImageFormat.NV21, width, height, null
-    )
-
-    val out = java.io.ByteArrayOutputStream()
-    yuvImage.compressToJpeg(android.graphics.Rect(0, 0, width, height), 95, out)
-
-    // Apply rotation if needed
-    if (rotationDegrees == 0) return out.toByteArray()
-
-    val bitmap = BitmapFactory.decodeByteArray(out.toByteArray(), 0, out.size())
-    val matrix = android.graphics.Matrix().apply { postRotate(rotationDegrees.toFloat()) }
-    val rotated = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
-
-    val rotatedOut = java.io.ByteArrayOutputStream()
-    rotated.compress(Bitmap.CompressFormat.JPEG, 95, rotatedOut)
-
-    // Clean up
-    bitmap.recycle()
-    rotated.recycle()
-
-    return rotatedOut.toByteArray()
+fun Bitmap.toJpegBytes(quality: Int = 95): ByteArray {
+    val stream = ByteArrayOutputStream()
+    this.compress(Bitmap.CompressFormat.JPEG, quality, stream)
+    return stream.toByteArray()
 }
 
 fun base64ToBitmap(base64: String): Bitmap? {
@@ -81,10 +32,17 @@ fun base64ToBitmap(base64: String): Bitmap? {
     }
 }
 
-fun scanImage(image: Image, rotationDegrees: Int, onResult: (DetectionResult) -> Unit, onError: (IOException) -> Unit) {
-    val jpegBytes = image.toJpegBytes(rotationDegrees)
+fun scanImage(detectionViewModel: DetectionViewModel, image: Bitmap, zoom: Float, onResult: (DetectionResult) -> Unit, onError: (IOException) -> Unit) {
+    detectionViewModel.setProcessing()
+    // Convert into JPEG Bytes
+    val jpegBytes = image.toJpegBytes()
 
-    val client = okhttp3.OkHttpClient()
+    val client = OkHttpClient.Builder()
+        .connectTimeout(5, TimeUnit.SECONDS)
+        .readTimeout(10, TimeUnit.SECONDS)
+        .writeTimeout(10, TimeUnit.SECONDS)
+        .callTimeout(15, TimeUnit.SECONDS)
+        .build()
 
     val requestBody = jpegBytes.toRequestBody("image/jpeg".toMediaType(), 0, jpegBytes.size)
 
@@ -97,6 +55,7 @@ fun scanImage(image: Image, rotationDegrees: Int, onResult: (DetectionResult) ->
         )
         .build()
 
+    detectionViewModel.setUploading()
     val request = okhttp3.Request.Builder()
         .url("${ConfigManager.BASE_URL}/detect")
         .post(multipartBody)
@@ -104,18 +63,37 @@ fun scanImage(image: Image, rotationDegrees: Int, onResult: (DetectionResult) ->
 
     client.newCall(request).enqueue(object : okhttp3.Callback {
         override fun onFailure(call: okhttp3.Call, e: IOException) {
+            Log.e("SCANNER", "Fail to call the API")
             e.printStackTrace()
 
-            onError(e)
+            CoroutineScope(Dispatchers.Main).launch {
+                detectionViewModel.setFailed()
+
+                onError(e)
+            }
         }
 
         override fun onResponse(call: okhttp3.Call, response: okhttp3.Response) {
+            Log.i("SCANNER", "Got response from the API")
+            if (!response.isSuccessful) {
+                CoroutineScope(Dispatchers.Main).launch {
+                    detectionViewModel.setFailed()
+                    onError(IOException("HTTP ${response.code}"))
+                }
+                return
+            }
+
             val body = response.body?.string() ?: return
 
             val gson = com.google.gson.Gson()
             val result = gson.fromJson(body, DetectionResult::class.java)
 
-            onResult(result)
+
+            CoroutineScope(Dispatchers.Main).launch {
+                detectionViewModel.setSuccess()
+
+                onResult(result)
+            }
         }
     })
 }

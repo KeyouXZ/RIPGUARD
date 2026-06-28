@@ -1,7 +1,5 @@
 package com.skyo.ripguard.model
 
-import androidx.annotation.Keep
-
 data class BoundingBox(
     val x1: Float,
     val y1: Float,
@@ -24,3 +22,12 @@ data class DetectionResult(
     val size: Int,
     val result: Result
 )
+
+enum class DetectionState {
+    Idle,
+    Capturing,
+    Uploading,
+    Processing,
+    Success,
+    Failed
+}

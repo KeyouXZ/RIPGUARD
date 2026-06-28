@@ -1,5 +1,6 @@
 package com.skyo.ripguard
 
+import com.skyo.ripguard.viewmodel.DetectionViewModel
 import com.skyo.ripguard.viewmodel.EducationViewModel
 import com.skyo.ripguard.viewmodel.NavbarViewModel
 
@@ -20,6 +21,17 @@ object EducationViewModelSingleton {
     fun get(): EducationViewModel {
         if (instance == null) {
             instance = EducationViewModel()
+        }
+        return instance!!
+    }
+}
+
+object DetectionViewModelSingleton {
+    private var instance: DetectionViewModel? = null
+
+    fun get(): DetectionViewModel {
+        if (instance == null) {
+            instance = DetectionViewModel()
         }
         return instance!!
     }

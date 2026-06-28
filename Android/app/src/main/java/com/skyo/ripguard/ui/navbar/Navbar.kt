@@ -44,6 +44,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.skyo.ripguard.DetectionViewModelSingleton
 import com.skyo.ripguard.EducationViewModelSingleton
 import com.skyo.ripguard.R
 import com.skyo.ripguard.controller.ChromeController
@@ -125,9 +126,8 @@ fun NavDrawer(
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
-    val context = LocalContext.current.applicationContext as Application
-
     val educationViewModel = remember { EducationViewModelSingleton.get() }
+    val detectionViewModel = remember { DetectionViewModelSingleton.get() }
 
     val selectedDestination = navViewModel.selectedDestination
 
@@ -214,7 +214,7 @@ fun NavDrawer(
                     LokasiScreen(chrome, navController, drawerState, scope)
                 }
                 composable("deteksi") {
-                    DeteksiScreen(chrome, @Composable {
+                    DeteksiScreen(chrome, detectionViewModel, @Composable {
                         DefaultTopBar(
                             navController,
                             drawerState,

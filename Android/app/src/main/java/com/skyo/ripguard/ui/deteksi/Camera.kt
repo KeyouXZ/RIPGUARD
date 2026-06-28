@@ -1,13 +1,11 @@
 package com.skyo.ripguard.ui.deteksi
 
 import android.annotation.SuppressLint
-import android.widget.Toast
 import androidx.annotation.OptIn
 import androidx.camera.core.AspectRatio
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageAnalysis
-import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
 import androidx.camera.extensions.ExtensionMode
 import androidx.camera.extensions.ExtensionsManager
@@ -38,13 +36,14 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.skyo.ripguard.model.DetectionResult
+import com.skyo.ripguard.viewmodel.DetectionViewModel
 import java.io.IOException
 
 
 @SuppressLint("LocalContextResourcesRead")
 @OptIn(ExperimentalGetImage::class)
 @Composable
-fun CameraLogic(onResult: (DetectionResult) -> Unit, onError: (IOException) -> Unit) {
+fun CameraLogic(detectionViewModel: DetectionViewModel, onResult: (DetectionResult) -> Unit, onError: (IOException) -> Unit) {
     val lifecycleOwner = LocalLifecycleOwner.current
 
     var cameraRef by remember { mutableStateOf<androidx.camera.core.Camera?>(null) }
@@ -105,6 +104,7 @@ fun CameraLogic(onResult: (DetectionResult) -> Unit, onError: (IOException) -> U
                     val imageAnalyzer = ImageAnalysis.Builder()
                         .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                         .setTargetResolution(android.util.Size(640, 640))
+                        .setOutputImageRotationEnabled(true)
                         .build()
                         .also { analysis ->
                             analysis.setAnalyzer(
@@ -115,15 +115,13 @@ fun CameraLogic(onResult: (DetectionResult) -> Unit, onError: (IOException) -> U
 
                                     val mediaImage = imageProxy.image
                                     if (mediaImage != null) {
-                                        Toast.makeText(
-                                            context,
-                                            "Scanning image...",
-                                            Toast.LENGTH_LONG
-                                        ).show()
-
-                                        val rotation = imageProxy.imageInfo.rotationDegrees
-
-                                        scanImage(mediaImage, rotation, onResult, onError)
+                                        val bmp = imageProxy.toBitmap()
+                                        val zoomRatio = cameraRef
+                                            ?.cameraInfo
+                                            ?.zoomState
+                                            ?.value
+                                            ?.zoomRatio ?: 1f
+                                        scanImage(detectionViewModel, bmp, zoomRatio, onResult, onError)
                                     }
                                 }
 

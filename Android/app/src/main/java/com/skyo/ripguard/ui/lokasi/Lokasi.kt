@@ -53,7 +53,7 @@ fun LokasiScreen(chrome: ChromeController, navController: NavController, drawerS
 
             setTileSource(TileSourceFactory.MAPNIK)
 
-            controller.setZoom(15.0)
+            controller.setZoom(16.0)
             //  8.0253993°S 110.3287713°E Parangtritis
             controller.setCenter(GeoPoint(-8.0253993, 110.3287713))
 
