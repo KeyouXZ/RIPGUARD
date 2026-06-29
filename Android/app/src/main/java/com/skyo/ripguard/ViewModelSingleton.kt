@@ -2,6 +2,7 @@ package com.skyo.ripguard
 
 import com.skyo.ripguard.viewmodel.DetectionViewModel
 import com.skyo.ripguard.viewmodel.EducationViewModel
+import com.skyo.ripguard.viewmodel.LocationViewModel
 import com.skyo.ripguard.viewmodel.NavbarViewModel
 
 object NavbarViewModelSingleton {
@@ -32,6 +33,17 @@ object DetectionViewModelSingleton {
     fun get(): DetectionViewModel {
         if (instance == null) {
             instance = DetectionViewModel()
+        }
+        return instance!!
+    }
+}
+
+object LocationViewModelSingleton {
+    private var instance: LocationViewModel? = null
+
+    fun get(): LocationViewModel {
+        if (instance == null) {
+            instance = LocationViewModel()
         }
         return instance!!
     }

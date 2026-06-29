@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::time::{Duration, SystemTime};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct BoundingBox {
@@ -13,26 +13,40 @@ pub struct BoundingBox {
 pub struct DetectionResult {
     pub bbox: BoundingBox,
     pub confidence: f32,
-
-    pub latitude: Option<f64>,
-    pub longitude: Option<f64>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Detection {
+    pub id: u64,
     pub detections: Vec<DetectionResult>,
 
+    pub latitude: Option<f64>,
+    pub longitude: Option<f64>,
     pub wind_speed: Option<f32>,
 
-    pub created_at: SystemTime,
+    /// In milliseconds
+    pub created_at: u64,
     pub image_path: Option<String>,
+
+    /// In seconds
+    pub ttl: u64,
 }
 
 impl Detection {
-    pub fn is_expired(&self, ttl: u64) -> bool {
-        self.created_at
-            .elapsed()
-            .map(|e| e > Duration::from_millis(ttl))
-            .unwrap_or(true)
+    pub fn is_expired(&self) -> bool {
+        if self.ttl == 0 {
+            return false;
+        }
+
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_millis() as u64;
+
+        let expires_at = self
+            .created_at
+            .saturating_add(self.ttl.saturating_mul(1000));
+
+        now >= expires_at
     }
 }

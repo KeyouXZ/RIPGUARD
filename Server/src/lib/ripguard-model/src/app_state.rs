@@ -15,4 +15,5 @@ pub struct AppState {
     pub input_buffer: Arc<Mutex<Array4<f32>>>,
     pub image_buffer: Arc<Mutex<RgbImage>>,
     pub cache: Arc<Mutex<VecDeque<Detection>>>,
+    pub last_id: Arc<Mutex<u64>>,
 }

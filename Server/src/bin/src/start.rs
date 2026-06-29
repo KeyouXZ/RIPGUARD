@@ -5,7 +5,10 @@ use log::{error, info};
 use ndarray::Array4;
 use ripguard_model::{AppState, Detection};
 use std::{collections::VecDeque, path::PathBuf, process::exit, sync::Arc, time::Duration};
-use tokio::sync::{Mutex, broadcast};
+use tokio::{
+    fs,
+    sync::{Mutex, broadcast},
+};
 
 pub async fn start(port: &Option<u16>, config_path: &Option<PathBuf>) -> Result<()> {
     // Check for libonnxruntime
@@ -52,10 +55,21 @@ pub async fn start(port: &Option<u16>, config_path: &Option<PathBuf>) -> Result<
     tokio::fs::create_dir_all("frames/detected").await?;
     tokio::fs::create_dir_all("reports").await?;
 
+    // Read data json if available
+    let json = fs::read_to_string("data.json").await?;
+    let data_json: VecDeque<Detection> = serde_json::from_str(&json)?;
+
     // Pre-allocate reusable buffers to avoid repeated allocations
     let input_buffer = Arc::new(Mutex::new(Array4::<f32>::zeros((1, 3, 640, 640))));
     let image_buffer = Arc::new(Mutex::new(RgbImage::new(640, 640)));
-    let cache = Arc::new(Mutex::new(VecDeque::<Detection>::new()));
+    let cache = Arc::new(Mutex::new(data_json));
+
+    let cache_len = cache.lock().await.len();
+    let last_id = if cache_len > 0 {
+        cache.lock().await.back().unwrap().id
+    } else {
+        0
+    };
 
     info!("Creating app...");
     let state = AppState {
@@ -66,6 +80,7 @@ pub async fn start(port: &Option<u16>, config_path: &Option<PathBuf>) -> Result<
         input_buffer,
         image_buffer,
         cache,
+        last_id: Arc::new(Mutex::new(last_id)),
     };
 
     let detection_state = state.clone();
@@ -94,7 +109,7 @@ pub async fn start(port: &Option<u16>, config_path: &Option<PathBuf>) -> Result<
         exit(1);
     });
 
-    info!("Server running...");
+    info!("Server running at port {}", port);
 
     if let Err(e) = axum::serve(listener, app).await {
         log::error!("Server error: {}", e);

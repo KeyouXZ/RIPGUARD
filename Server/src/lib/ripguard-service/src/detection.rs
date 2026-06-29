@@ -1,13 +1,17 @@
+use crate::{generate_output_img, run_detection};
 use chrono::Local;
 use image::{ImageFormat, ImageReader};
 use log::error;
-use rand::RngExt;
-use ripguard_model::{AppState, BoundingBox, Detection, DetectionResult};
+use ripguard_model::{AppState, Detection};
 use std::process::exit;
 
-use crate::{generate_output_img, run_detection};
+#[cfg(feature = "fake_detections")]
+use rand::RngExt;
+#[cfg(feature = "fake_detections")]
+use ripguard_model::{BoundingBox, DetectionResult};
 
-pub(crate) fn _fake_detections() -> Detection {
+#[cfg(feature = "fake_detections")]
+pub(crate) fn fake_detections() -> Detection {
     let mut rng = rand::rng();
 
     Detection {
@@ -19,9 +23,9 @@ pub(crate) fn _fake_detections() -> Detection {
                 y2: rng.random_range(0.5..1.0),
             },
             confidence: rng.random_range(0.5..1.0),
-            latitude: None,
-            longitude: None,
         }],
+        latitude: None,
+        longitude: None,
         wind_speed: None,
         created_at: std::time::SystemTime::now(),
         image_path: None,
@@ -78,10 +82,24 @@ pub(crate) async fn real_detection(app_state: &AppState, img_path: &str) -> Dete
             });
     }
 
+    let mut last_id = app_state.last_id.lock().await;
+    let id = *last_id;
+    *last_id += 1;
+
+    let created_at = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis() as u64;
+
+    // TODO: Calculate latitude, longitude
     Detection {
+        id,
         detections,
+        latitude: None,
+        longitude: None,
         wind_speed: None,
-        created_at: std::time::SystemTime::now(),
+        created_at,
         image_path: output_path,
+        ttl: 60 * 60,
     }
 }

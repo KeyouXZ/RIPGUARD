@@ -12,9 +12,17 @@ import android.os.IBinder
 import android.os.Looper
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -35,6 +43,8 @@ class PersistentWebSocket(private val url: String) {
 
     private val _status = MutableStateFlow(WSStatus.DISCONNECTED)
     val status: StateFlow<WSStatus> = _status.asStateFlow()
+
+    var onMessage: ((String) -> Unit)? = null
 
     fun connect() {
         _status.value = WSStatus.RECONNECTING
@@ -61,6 +71,14 @@ class PersistentWebSocket(private val url: String) {
                 Log.d("WS", "Closed: $reason")
                 scheduleReconnect()
             }
+
+            override fun onMessage(
+                webSocket: WebSocket,
+                text: String
+            ) {
+                Log.d("WS", text)
+                onMessage?.invoke(text)
+            }
         })
     }
 
@@ -81,6 +99,9 @@ class PersistentWebSocket(private val url: String) {
 
 object WSManager {
     private var ws: PersistentWebSocket? = null
+    private val _messages = MutableSharedFlow<String>(extraBufferCapacity = 64)
+    val messages: SharedFlow<String> = _messages.asSharedFlow()
+
     val status: StateFlow<WSStatus>
         get() = ws?.status ?: MutableStateFlow(WSStatus.DISCONNECTED).asStateFlow()
 
@@ -88,12 +109,26 @@ object WSManager {
         if (ws == null) {
             val url = ConfigManager.BASE_URL.replace("http", "ws") + "/ws"
             ws = PersistentWebSocket(url)
+            ws?.onMessage = { msg ->
+                _messages.tryEmit(msg)
+            }
             ws?.connect()
         }
     }
 
     fun send(msg: String) {
         ws?.send(msg)
+    }
+
+    @Deprecated("Use messages SharedFlow instead", ReplaceWith("messages"))
+    fun setOnMessage(listener: (String) -> Unit) {
+        ws?.onMessage = listener
+    }
+
+    fun clearOnMessage() {
+        ws?.onMessage = { msg ->
+            _messages.tryEmit(msg)
+        }
     }
 
     fun close() {

@@ -1,5 +1,6 @@
 package com.skyo.ripguard.ui.lokasi
 
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,6 +14,8 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -23,8 +26,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.navigation.NavController
+import com.skyo.ripguard.ConfigManager
 import com.skyo.ripguard.controller.ChromeController
 import com.skyo.ripguard.controller.UseChrome
+import com.skyo.ripguard.model.DetectionRes
+import com.skyo.ripguard.viewmodel.LocationViewModel
 import kotlinx.coroutines.CoroutineScope
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
@@ -35,7 +41,7 @@ import org.osmdroid.views.overlay.Polygon
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LokasiScreen(chrome: ChromeController, navController: NavController, drawerState: DrawerState, scope: CoroutineScope) {
+fun LokasiScreen(chrome: ChromeController, locationViewModel: LocationViewModel, navController: NavController, drawerState: DrawerState, scope: CoroutineScope) {
     UseChrome(chrome, topBar = {
         LocationTopBar(
             navController,
@@ -45,7 +51,6 @@ fun LokasiScreen(chrome: ChromeController, navController: NavController, drawerS
     })
 
     val context = LocalContext.current
-    var showBottomSheet by remember { mutableStateOf(false) }
 
     val mapView = remember {
         MapView(context).apply {
@@ -63,29 +68,51 @@ fun LokasiScreen(chrome: ChromeController, navController: NavController, drawerS
         }
     }
 
-    val polygon = Polygon().apply {
-        points = listOf(
-            GeoPoint(-8.0253993, 110.3287713),
-            GeoPoint(-8.0260000, 110.3295000),
-            GeoPoint(-8.0245000, 110.3300000)
-        )
-
-        fillColor = 0x5500FF00
-        strokeColor = 0xFF00FF00.toInt()
-        strokeWidth = 4f
-
-        setOnClickListener { _, _, _ ->
-            showBottomSheet = true
-            true
-        }
-    }
-
-    mapView.overlays.add(polygon)
+    val locations by locationViewModel.locations.collectAsState()
+    var selectedLocation by remember { mutableStateOf<DetectionRes?>(null) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         AndroidView(
             factory = { mapView },
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize(),
+            update = { map ->
+                map.overlays.removeAll { it is Polygon }
+                Log.d("MAP", "locations = ${locations.size}")
+
+                locations.forEach { detection ->
+                    Log.d("MAP", "${detection.latitude}, ${detection.longitude}")
+
+                    detection.detections.forEach { det ->
+
+                        val polygon = Polygon().apply {
+                            val lat = detection.latitude
+                            val lon = detection.longitude
+
+                            val size = 0.00005
+
+                            points = listOf(
+                                GeoPoint(lat + size, lon - size),
+                                GeoPoint(lat + size, lon + size),
+                                GeoPoint(lat - size, lon + size),
+                                GeoPoint(lat - size, lon - size)
+                            )
+
+                            fillColor = 0x5500FF00
+                            strokeColor = 0xFF00FF00.toInt()
+                            strokeWidth = 4f
+
+                            setOnClickListener { _, _, _ ->
+                                selectedLocation = detection
+                                true
+                            }
+                        }
+
+                        map.overlays.add(polygon)
+                    }
+                }
+
+                map.invalidate()
+            }
         )
 
         Column(
@@ -108,11 +135,16 @@ fun LokasiScreen(chrome: ChromeController, navController: NavController, drawerS
             }
         }
 
-        if (showBottomSheet) {
-            ModalBottomSheet (
-                onDismissRequest = { showBottomSheet = false }
+        selectedLocation?.let { location ->
+
+            ModalBottomSheet(
+                onDismissRequest = { selectedLocation = null }
             ) {
-                RipInfoBottomSheet(1, 30.1F) // Dummy
+                RipInfoBottomSheet(
+                    location.detections.size,
+                    location.windSpeed,
+                    "${ConfigManager.BASE_URL}/image/${location.id}"
+                )
             }
         }
     }

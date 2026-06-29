@@ -3,11 +3,11 @@ use ripguard_model::{AppState, Payload};
 
 use crate::{enrich_weather, grab_frame, real_detection};
 
+const MAX_CACHE: usize = 256;
+
 async fn process_detection_cycle(
     app_state: &AppState,
 ) -> Result<Option<String>, Box<dyn std::error::Error + Send + Sync>> {
-    const MAX_CACHE: usize = 100;
-
     let frame_path = grab_frame().await?;
 
     let mut detections = real_detection(app_state, &frame_path).await;
@@ -24,11 +24,14 @@ async fn process_detection_cycle(
     // cache system
     {
         let mut cache = app_state.cache.lock().await;
-        let ttl = app_state.config.general.update_interval;
 
-        cache.push_back(detections);
+        cache.push_back(detections.clone());
 
-        cache.retain(|item| !item.is_expired(ttl));
+        cache.retain(|item| !item.is_expired());
+
+        let del_payload = Payload::Detection(detections.clone());
+        let del_msg = serde_json::to_string(&del_payload)?;
+        app_state.tx.send(del_msg)?;
 
         while cache.len() > MAX_CACHE {
             cache.pop_front();

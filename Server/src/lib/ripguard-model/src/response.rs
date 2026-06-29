@@ -38,6 +38,9 @@ pub enum Payload {
     #[serde(rename = "init")]
     Init(VecDeque<Detection>),
 
-    #[serde(rename = "detection")]
+    #[serde(rename = "new")]
     Detection(Detection),
+
+    #[serde(rename = "del")]
+    Delete(u64),
 }

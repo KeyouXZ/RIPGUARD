@@ -28,6 +28,9 @@ pub async fn detect(
     let results = {
         let mut session = app_state.session.lock().await;
         let mut input_buffer = app_state.input_buffer.lock().await;
+        #[cfg(feature = "fake_detections")]
+        fake_detections(&mut session, &img, &mut input_buffer)?;
+        #[cfg(not(feature = "fake_detections"))]
         run_detection(&mut session, &img, &mut input_buffer)?
     };
 

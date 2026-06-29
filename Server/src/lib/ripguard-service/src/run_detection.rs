@@ -76,12 +76,9 @@ pub fn run_detection(
         #[cfg(debug_assertions)]
         info!("Detected → class: {}, conf: {}", class_id, conf);
 
-        // TODO: Calculate latitude and longitude
         results.push(DetectionResult {
             bbox: BoundingBox { x1, y1, x2, y2 },
             confidence: conf,
-            latitude: None,
-            longitude: None,
         });
     }
 

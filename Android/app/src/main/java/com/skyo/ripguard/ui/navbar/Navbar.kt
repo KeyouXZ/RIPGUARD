@@ -46,6 +46,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.skyo.ripguard.DetectionViewModelSingleton
 import com.skyo.ripguard.EducationViewModelSingleton
+import com.skyo.ripguard.LocationViewModelSingleton
 import com.skyo.ripguard.R
 import com.skyo.ripguard.controller.ChromeController
 import com.skyo.ripguard.controller.UseChrome
@@ -128,6 +129,7 @@ fun NavDrawer(
 
     val educationViewModel = remember { EducationViewModelSingleton.get() }
     val detectionViewModel = remember { DetectionViewModelSingleton.get() }
+    val locationViewModel = remember { LocationViewModelSingleton.get() }
 
     val selectedDestination = navViewModel.selectedDestination
 
@@ -211,7 +213,7 @@ fun NavDrawer(
                     })
                 }
                 composable("lokasi") {
-                    LokasiScreen(chrome, navController, drawerState, scope)
+                    LokasiScreen(chrome, locationViewModel, navController, drawerState, scope)
                 }
                 composable("deteksi") {
                     DeteksiScreen(chrome, detectionViewModel, @Composable {

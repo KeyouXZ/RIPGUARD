@@ -1,9 +1,7 @@
 package com.skyo.ripguard.ui.lokasi
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentHeight
@@ -17,10 +15,11 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import com.skyo.ripguard.R
 
 @Composable
-fun RipInfoBottomSheet(index: Int, kecepatanAngin: Float) {
+fun RipInfoBottomSheet(index: Int, kecepatanAngin: Float, imageUrl: String?) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -34,13 +33,15 @@ fun RipInfoBottomSheet(index: Int, kecepatanAngin: Float) {
             style = MaterialTheme.typography.titleLarge
         )
 
-        Image(
-            painter = painterResource(id = R.drawable.beranda),
+        AsyncImage(
+            model = imageUrl,
+            placeholder = painterResource(id = R.drawable.placeholder),
+            error = painterResource(id = R.drawable.placeholder),
             contentDescription = null,
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(16.dp)),
-            contentScale = ContentScale.Crop
+            contentScale = ContentScale.FillWidth
         )
 
         Column {
