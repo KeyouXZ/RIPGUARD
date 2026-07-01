@@ -1,3 +1,6 @@
+// Copyright (C) 2026 KeyouXZ
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 use axum::{Json, response::IntoResponse};
 use chrono::Local;
 use log::info;

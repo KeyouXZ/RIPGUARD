@@ -1,3 +1,6 @@
+// Copyright (C) 2026 KeyouXZ
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 package com.skyo.ripguard.ui.lokasi
 
 import androidx.compose.foundation.layout.Arrangement

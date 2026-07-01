@@ -1,7 +1,10 @@
+// Copyright (C) 2026 KeyouXZ
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 use anyhow::{Context, Result};
 use image::RgbImage;
-use libloading::Library;
-use log::{error, info};
+use libloading::{Library, Symbol};
+use log::info;
 use ndarray::Array4;
 use ripguard_model::{AppState, Detection};
 use std::{collections::VecDeque, path::PathBuf, process::exit, sync::Arc, time::Duration};
@@ -13,13 +16,14 @@ use tokio::{
 pub async fn start(port: &Option<u16>, config_path: &Option<PathBuf>) -> Result<()> {
     // Check for libonnxruntime
     unsafe {
-        match Library::new("libonnxruntime.so") {
-            Ok(_) => info!("Found libonnxruntime.so"),
-            Err(e) => {
-                error!("Failed: {e}");
-                exit(1);
-            }
-        }
+        let lib = Library::new("libonnxruntime.so")
+            .map_err(|e| anyhow::anyhow!("Failed to load library: {e}"))?;
+
+        let _: Symbol<unsafe extern "C" fn() -> *const std::ffi::c_void> = lib
+            .get(b"OrtGetApiBase")
+            .context("Not a valid ONNX Runtime library")?;
+
+        info!("Valid ONNX Runtime library!");
     }
 
     info!("Loading config...");

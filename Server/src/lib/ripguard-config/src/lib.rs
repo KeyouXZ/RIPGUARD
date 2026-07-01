@@ -1,3 +1,6 @@
+// Copyright (C) 2026 KeyouXZ
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::fs;

@@ -1,3 +1,6 @@
+// Copyright (C) 2026 KeyouXZ
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 use crate::{generate_output_img, run_detection};
 use chrono::Local;
 use image::{ImageFormat, ImageReader};

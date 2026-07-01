@@ -1,3 +1,6 @@
+// Copyright (C) 2026 KeyouXZ
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 use image::RgbImage;
 #[cfg(debug_assertions)]
 use log::info;

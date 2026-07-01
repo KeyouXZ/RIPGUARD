@@ -1,3 +1,6 @@
+// Copyright (C) 2026 KeyouXZ
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 use axum::body::Bytes;
 use base64::Engine;
 use base64::engine::general_purpose::STANDARD;

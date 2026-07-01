@@ -9,7 +9,7 @@
   <p>Integrasi Edge Intelligence dan Cloud Computing untuk Deteksi serta Pemetaan Rip Current di Kawasan Pantai Parangtritis, Bantul, Yogyakarta</p>
 
   ![License](https://img.shields.io/badge/License-AGPLv3-blue.svg)
-  [![Build](https://github.com/KeyouXZ/RIPGUARD/actions/workflows/server.yml/badge.svg)](https://github.com/KeyouXZ/RIPGUARD/actions/workflows/server.yml)
+  [![Server](https://github.com/KeyouXZ/RIPGUARD/actions/workflows/server.yml/badge.svg)](https://github.com/KeyouXZ/RIPGUARD/actions/workflows/server.yml)
 </div>
 
 > RIPGUARD is an AI-powered early warning platform designed to detect **rip currents** from coastal imagery and deliver real-time hazard information through an Android application. Rip currents are narrow, fast-moving channels of water that flow away from the shore and are responsible for numerous coastal accidents worldwide. Because they are often difficult for beach visitors to recognize, traditional mitigation methods such as static warning signs and manual patrols may not provide sufficient protection. RIPGUARD addresses this challenge by combining a **YOLOv8-based computer vision model**, a **high-performance Rust backend**, and a **modern Android application built with Kotlin and Jetpack Compose**. The system performs real-time rip current detection, processes predictions on the server, and presents hazard information through an intuitive mobile interface. The project was developed as part of a research initiative focusing on disaster mitigation at Parangtritis Beach, Indonesia. Its goal is to improve public awareness, support safer tourism, and demonstrate how artificial intelligence can enhance coastal safety through accessible early warning technology.
