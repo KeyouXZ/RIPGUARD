@@ -1,7 +1,10 @@
-name: Build
+name: Rust Server Build
 
 on:
   push:
+    branches:
+      - main
+  pull_request:
     branches:
       - main
 
@@ -29,7 +32,7 @@ jobs:
       - name: Install cargo-zigbuild
         run: cargo install cargo-zigbuild --locked
 
-      - name: Build
+      - name: Build max release configuration
         working-directory: Server
         run: |
           cargo zigbuild \
@@ -45,10 +48,8 @@ jobs:
           cp Server/target/x86_64-unknown-linux-gnu/max/ripguard dist/
           cp Server/lib/libonnxruntime.so dist/lib/
 
-          tar -czf ripguard-linux.tar.gz -C dist .
-
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: ripguard-linux
-          path: ripguard-linux.tar.gz
+          path: dist/

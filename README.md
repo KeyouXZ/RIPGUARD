@@ -9,6 +9,7 @@
   <p>Integrasi Edge Intelligence dan Cloud Computing untuk Deteksi serta Pemetaan Rip Current di Kawasan Pantai Parangtritis, Bantul, Yogyakarta</p>
 
   ![License](https://img.shields.io/badge/License-AGPLv3-blue.svg)
+  [![Android](https://github.com/KeyouXZ/RIPGUARD/actions/workflows/android.yml/badge.svg)](https://github.com/KeyouXZ/RIPGUARD/actions/workflows/android.yml)
   [![Server](https://github.com/KeyouXZ/RIPGUARD/actions/workflows/server.yml/badge.svg)](https://github.com/KeyouXZ/RIPGUARD/actions/workflows/server.yml)
 </div>
 
